@@ -54,6 +54,9 @@ importers:
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.1.11
+      '@types/google-one-tap':
+        specifier: ^1.2.6
+        version: 1.2.6
       '@types/node':
         specifier: ^20
         version: 20.19.9
@@ -567,6 +570,9 @@ packages:
 
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
+
+  '@types/google-one-tap@1.2.6':
+    resolution: {integrity: sha512-REmJsXVHvKb/sgI8DF+7IesMbDbcsEokHBqxU01ENZ8d98UPWdRLhUCtxEm9bhNFFg6PJGy7PNFdvovp0hK3jA==}
 
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
@@ -2467,6 +2473,8 @@ snapshots:
     optional: true
 
   '@types/estree@1.0.8': {}
+
+  '@types/google-one-tap@1.2.6': {}
 
   '@types/json-schema@7.0.15': {}
 
