@@ -24,39 +24,49 @@ const ParkPlayerCount = ({ parkId }: { parkId: string }) => {
 
   // This useEffect handles the initial load and the realtime subscription
   useEffect(() => {
-    // 1. Initial Data Load
-    fetchParkCount().then(() => {
-      setIsInitialLoading(false);
-    });
+    let isMounted = true;
 
-    // 2. Realtime Subscription
-    const channelName = `parks:${parkId}`;
-    const channel = supabase.channel(channelName);
+    // Wrap async logic in an IIFE
+    (async () => {
+      // 1. Initial Data Load
+      await fetchParkCount();
+      if (isMounted) setIsInitialLoading(false);
 
-    channel
-      .on("broadcast", { event: "CHECK_IN_CHANGE" }, (payload) => {
-        console.log(`Realtime event for park ${parkId}:`, payload);
-        // On event, re-fetch the source of truth. No loading state needed.
-        fetchParkCount();
-      })
-      .subscribe((status, err) => {
-        // This lets you know if the authorization passed or failed
-        if (status === "SUBSCRIBED") {
-          console.log(
-            `Successfully subscribed to authorized channel: ${channelName}`
-          );
-        }
-        if (status === "CHANNEL_ERROR") {
-          console.error(
-            `Failed to subscribe to channel ${channelName}. Error:`,
-            err
-          );
-        }
+      // 2. Realtime Subscription
+      const channelName = `parks:${parkId}`;
+      await supabase.realtime.setAuth();
+      const channel = supabase.channel(channelName, {
+        config: { private: true },
       });
+      channel
+        .on("broadcast", { event: "*" }, (payload) => {
+          console.log(`Realtime event for park ${parkId}:`, payload);
+          fetchParkCount();
+        })
+        .subscribe((status, err) => {
+          if (status === "SUBSCRIBED") {
+            console.log(
+              `Successfully subscribed to authorized channel: ${channelName}`
+            );
+          }
+          if (status === "CHANNEL_ERROR") {
+            console.error(
+              `Failed to subscribe to channel ${channelName}. Error:`,
+              err
+            );
+          }
+        });
 
-    // 3. Cleanup Function
+      // 3. Cleanup Function
+      return () => {
+        isMounted = false;
+        supabase.removeChannel(channel);
+      };
+    })();
+
+    // Cleanup for effect
     return () => {
-      supabase.removeChannel(channel);
+      isMounted = false;
     };
   }, [supabase, parkId, fetchParkCount]);
 
