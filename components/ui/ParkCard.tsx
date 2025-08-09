@@ -1,16 +1,17 @@
 "use client";
 import React, { FC, useTransition } from "react";
-import { addPark } from "@/app/parks/actions";
-import { park } from "@/app/generated/prisma/client";
+import { addParkForUser } from "@/app/parks/actions";
+import { Database } from "@/lib/database.types";
+type Park = Database["public"]["Tables"]["park"]["Row"];
 interface ParkCardProps {
-  park: park;
+  park: Park;
 }
 const ParkCard: FC<ParkCardProps> = ({ park }) => {
   const [isPending, startTransition] = useTransition();
 
-  const handleAddPark = async () => {
+  const handleAddParkForUser = async () => {
     startTransition(async () => {
-      const response = await addPark(park.id);
+      const response = await addParkForUser(park.id);
       if (response.success) {
         alert(response.message || "Park added successfully!");
       } else {
@@ -26,7 +27,7 @@ const ParkCard: FC<ParkCardProps> = ({ park }) => {
       <p className="text-gray-600">Location: {park.location}</p>
       <button
         className="px-4 py-2 rounded text-white bg-blue-600 hover:bg-blue-700"
-        onClick={handleAddPark}
+        onClick={handleAddParkForUser}
       >
         {isPending ? "Adding..." : "Add Park"}
       </button>

@@ -1,12 +1,8 @@
 import { createClient } from "@/utils/supabase/server";
 
 import ParkCard from "@/components/ui/ParkCard";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
-import { addPark } from "./actions";
 import InfoMessage from "@/components/ui/InfoMessage";
-import { park, park_users } from "@/app/generated/prisma/client";
 export default async function ParksPage() {
   // Get user session from Supabase
   const supabase = await createClient();
@@ -23,7 +19,7 @@ export default async function ParksPage() {
   if (parksError) {
     throw new Error("Failed to fetch parks");
   }
-  let parks: park[] = parksData ?? [];
+  let parks = parksData ?? [];
   if (parks.length === 0) {
     return (
       <InfoMessage title="No Parks Available">
@@ -39,7 +35,7 @@ export default async function ParksPage() {
   if (parkUsersError) {
     throw new Error("Failed to fetch parks");
   }
-  let parkUsers: park_users[] = parkUsersData ?? [];
+  let parkUsers = parkUsersData ?? [];
   const addedParkIds = new Set(parkUsers.map((p) => p.park_id));
   const parksToAdd = parks.filter((park) => !addedParkIds.has(park.id));
   if (parksToAdd.length === 0) {
