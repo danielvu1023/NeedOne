@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client"; // Your Supabase client setup
 
 // This component takes the ID of the park it should track as a prop.
-const ParkPlayerCount = ({ parkId }: { parkId: string }) => {
+const ParkPlayerCount = ({ parkId }: { parkId: number }) => {
   const supabase = createClient();
   const [playerCount, setPlayerCount] = useState(0);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
