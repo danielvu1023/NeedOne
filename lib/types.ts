@@ -4,6 +4,11 @@ export interface ApiResponse {
   success: boolean;
   message?: string;
 }
+export interface ApiDataResponse<T> {
+  success: boolean;
+  message?: string;
+  data?: T;
+}
 export type Park = Database["public"]["Tables"]["park"]["Row"];
 export interface ParkCardProps {
   park: Park;

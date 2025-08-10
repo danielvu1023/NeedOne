@@ -157,7 +157,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      auto_checkout_stale_users: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      check_in_user: {
+        Args: { park_id_to_check_in: number }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
