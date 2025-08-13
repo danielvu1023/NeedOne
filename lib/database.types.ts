@@ -152,11 +152,85 @@ export type Database = {
         }
         Relationships: []
       }
+      reports: {
+        Row: {
+          created_at: string
+          id: string
+          park_id: number
+          report_count: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          park_id: number
+          report_count?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          park_id?: number
+          report_count?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_park_id_fkey"
+            columns: ["park_id"]
+            isOneToOne: false
+            referencedRelation: "park"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      role_permissions: {
+        Row: {
+          id: number
+          permission: Database["public"]["Enums"]["app_permission"]
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          id?: number
+          permission: Database["public"]["Enums"]["app_permission"]
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          id?: number
+          permission?: Database["public"]["Enums"]["app_permission"]
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: number
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: number
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: number
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      authorize: {
+        Args: {
+          requested_permission: Database["public"]["Enums"]["app_permission"]
+        }
+        Returns: boolean
+      }
       auto_checkout_stale_users: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -165,9 +239,14 @@ export type Database = {
         Args: { park_id_to_check_in: number }
         Returns: undefined
       }
+      custom_access_token_hook: {
+        Args: { event: Json }
+        Returns: Json
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_permission: "reports.insert"
+      app_role: "moderator"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -294,6 +373,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_permission: ["reports.insert"],
+      app_role: ["moderator"],
+    },
   },
 } as const
