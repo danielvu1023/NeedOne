@@ -1,7 +1,6 @@
-import ParkPlayerCount from "@/components/park/ParkPlayerCount";
-import { Button } from "@/components/ui/Button";
+import { SignOutButton } from "@/components/auth/sign-out-button";
+import ParkPlayerCount from "@/components/park/park-player-count";
 import { createClient } from "@/utils/supabase/server";
-import Image from "next/image";
 import { redirect } from "next/navigation";
 
 export default async function Home() {
@@ -35,6 +34,7 @@ export default async function Home() {
           <ParkPlayerCount key={park.id} park={park} />
         ))}
       </div>
+      <SignOutButton></SignOutButton>
     </div>
   );
 }

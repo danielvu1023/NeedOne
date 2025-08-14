@@ -25,7 +25,7 @@ export async function login(formData: FormData) {
   redirect("/");
 }
 
-export async function signup(formData: FormData) {
+export async function signUp(formData: FormData) {
   const supabase = await createClient();
 
   // type-casting here for convenience
@@ -43,4 +43,17 @@ export async function signup(formData: FormData) {
 
   revalidatePath("/", "layout");
   redirect("/");
+}
+
+export async function signOut() {
+  const supabase = await createClient();
+
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    redirect("/error");
+  }
+
+  revalidatePath("/", "layout");
+  redirect("/login");
 }

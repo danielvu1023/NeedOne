@@ -1,8 +1,8 @@
 import { createClient } from "@/utils/supabase/server";
 
-import ParkCard from "@/components/ui/ParkCard";
+import ParkCard from "@/components/ui/park-card";
 import { redirect } from "next/navigation";
-import InfoMessage from "@/components/ui/InfoMessage";
+import InfoMessage from "@/components/ui/info-message";
 export default async function ParksPage() {
   // Get user session from Supabase
   const supabase = await createClient();
