@@ -207,7 +207,7 @@ export async function getParkReportCount(
       console.error("Error fetching park report:", error);
       return { success: false, message: "Failed to fetch park report." };
     }
-    const count = latestReport[0].report_count;
+    const count = latestReport[0]?.report_count ?? 0;
     return { success: true, data: count };
   } catch (err) {
     console.error("Exception fetching park report:", err);
