@@ -214,3 +214,20 @@ export async function getParkReportCount(
     return { success: false, message: "Could not connect to the server." };
   }
 }
+
+export async function getAllParks() {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.from("park").select("*");
+
+    if (error) {
+      console.error("Error fetching parks:", error);
+      return { success: false, message: "Failed to fetch parks." };
+    }
+
+    return { success: true, data };
+  } catch (err) {
+    console.error("Exception fetching parks:", err);
+    return { success: false, message: "Could not connect to the server." };
+  }
+}
