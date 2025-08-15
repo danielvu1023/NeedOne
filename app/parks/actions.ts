@@ -3,7 +3,6 @@ import { ApiDataResponse, ApiResponse } from "@/lib/types";
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-
 export async function addParkForUser(parkId: number): Promise<ApiResponse> {
   try {
     const supabase = await createClient();
@@ -189,5 +188,29 @@ export async function getUserCheckInStatus(
   } catch (err) {
     console.error("Exception fetching check-in status:", err);
     return { success: false }; // Fail safely
+  }
+}
+
+export async function getParkReportCount(
+  parkId: number
+): Promise<ApiDataResponse<number>> {
+  try {
+    const supabase = await createClient();
+    const { data: latestReport, error } = await supabase
+      .from("reports") // 1. From the 'reports' table
+      .select("*") // 2. Select all columns
+      .eq("park_id", parkId) // 3. Filter for the specific park
+      .order("created_at", { ascending: false }) // 4. Order by date, newest first
+      .limit(1); // 5. Get only the top result
+
+    if (error) {
+      console.error("Error fetching park report:", error);
+      return { success: false, message: "Failed to fetch park report." };
+    }
+    const count = latestReport[0].report_count;
+    return { success: true, data: count };
+  } catch (err) {
+    console.error("Exception fetching park report:", err);
+    return { success: false, message: "Could not connect to the server." };
   }
 }

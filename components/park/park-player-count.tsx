@@ -8,6 +8,7 @@ import {
   deleteParkForUser,
   getUserCheckInStatus,
   checkInUser,
+  getParkReportCount,
 } from "@/app/parks/actions";
 const LoadingText = () => <div>Loading...</div>;
 // This component takes the ID of the park it should track as a prop.
@@ -16,6 +17,7 @@ const ParkPlayerCount = ({ park }: { park: Park }) => {
   const parkId = park.id;
 
   const [playerCount, setPlayerCount] = useState(0);
+  const [reportedPlayerCount, setReportedPlayerCount] = useState(0);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [message, setMessage] = useState<{
     text: string;
@@ -30,14 +32,16 @@ const ParkPlayerCount = ({ park }: { park: Park }) => {
   useEffect(() => {
     const loadInitialData = async () => {
       // Promise.all runs these two checks concurrently
-      const [statusResponse, countResult] = await Promise.all([
-        getUserCheckInStatus(parkId),
-        supabase
-          .from("check_in")
-          .select("*", { count: "exact", head: true })
-          .eq("park_id", parkId)
-          .is("check_out_time", null),
-      ]);
+      const [statusResponse, countResult, reportCountResult] =
+        await Promise.all([
+          getUserCheckInStatus(parkId),
+          supabase
+            .from("check_in")
+            .select("*", { count: "exact", head: true })
+            .eq("park_id", parkId)
+            .is("check_out_time", null),
+          getParkReportCount(parkId),
+        ]);
 
       // Update state with the results
       if (statusResponse.success && statusResponse.data) {
@@ -46,20 +50,25 @@ const ParkPlayerCount = ({ park }: { park: Park }) => {
       if (!countResult.error && countResult.count !== null) {
         setPlayerCount(countResult.count);
       }
-
+      if (reportCountResult.success && reportCountResult.data !== null) {
+        setReportedPlayerCount(reportCountResult.data ?? 0);
+      }
       setIsLoadingInitialData(false);
     };
 
     loadInitialData();
     (async () => {
-      const channelName = `parks:${parkId}`;
       await supabase.realtime.setAuth();
-      const channel = supabase.channel(channelName, {
+
+      // --- CHANNEL 1: For Player Check-ins (existing code) ---
+      const checkInChannelName = `parks:${parkId}`;
+      const checkInChannel = supabase.channel(checkInChannelName, {
         config: { private: true },
       });
-      channel
+
+      checkInChannel
         .on("broadcast", { event: "*" }, (payload) => {
-          console.log(`Realtime event for park ${parkId}:`, payload);
+          console.log(`Realtime check-in event for park ${parkId}:`, payload);
           const fetchCount = async () => {
             const { count } = await supabase
               .from("check_in")
@@ -73,20 +82,52 @@ const ParkPlayerCount = ({ park }: { park: Park }) => {
         .subscribe((status, err) => {
           if (status === "SUBSCRIBED") {
             console.log(
-              `Successfully subscribed to authorized channel: ${channelName}`
+              `Successfully subscribed to check-in channel: ${checkInChannelName}`
             );
           }
           if (status === "CHANNEL_ERROR") {
             console.error(
-              `Failed to subscribe to channel ${channelName}. Error:`,
+              `Failed to subscribe to channel ${checkInChannelName}. Error:`,
               err
             );
           }
         });
 
-      // 3. Cleanup Function
+      // --- CHANNEL 2: For Submitted Reports (NEW CODE) ---
+      const reportsChannelName = `park_reports:${parkId}`;
+      const reportsChannel = supabase.channel(reportsChannelName, {
+        config: { private: true },
+      });
+
+      reportsChannel
+        .on("broadcast", { event: "*" }, (message) => {
+          console.log(`New report broadcast for park ${parkId}:`, message);
+          // The new report data is in message.payload.new
+          const newReport = message.payload.record;
+          if (newReport && typeof newReport.report_count === "number") {
+            // Update the reported player count state directly from the payload
+            setReportedPlayerCount(newReport.report_count);
+          }
+        })
+        .subscribe((status, err) => {
+          if (status === "SUBSCRIBED") {
+            console.log(
+              `Successfully subscribed to reports channel: ${reportsChannelName}`
+            );
+          }
+          if (status === "CHANNEL_ERROR") {
+            console.error(
+              `Failed to subscribe to channel ${reportsChannelName}. Error:`,
+              err
+            );
+          }
+        });
+
+      // --- UPDATED Cleanup Function ---
+      // This now cleans up both channels when the component unmounts
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(checkInChannel);
+        supabase.removeChannel(reportsChannel); // Make sure to remove the new channel
       };
     })();
   }, [supabase, parkId]);
@@ -267,7 +308,10 @@ const ParkPlayerCount = ({ park }: { park: Park }) => {
           Players currently at this park:
         </h3>
         <p className="text-3xl font-bold mt-1">{playerCount}</p>
-
+        <h3 className="text-base font-medium">
+          Reported Players at this park:
+        </h3>
+        <p className="text-3xl font-bold mt-1">{reportedPlayerCount}</p>
         {isCheckedIn ? (
           <button
             className="mt-2 px-4 py-2 w-28 h-10 rounded bg-yellow-500 text-white hover:bg-yellow-600 text-sm disabled:opacity-50 flex items-center justify-center"
