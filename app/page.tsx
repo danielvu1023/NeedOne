@@ -1,4 +1,5 @@
 import { SignOutButton } from "@/components/auth/sign-out-button";
+import Link from "next/link";
 import ParkPlayerCount from "@/components/park/park-player-count";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
@@ -34,6 +35,12 @@ export default async function Home() {
           <ParkPlayerCount key={park.id} park={park} />
         ))}
       </div>
+      <Link
+        href="/notifications"
+        className="mt-8 text-blue-600 hover:underline text-lg"
+      >
+        Go to Notifications
+      </Link>
       <SignOutButton></SignOutButton>
     </div>
   );
