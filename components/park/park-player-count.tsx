@@ -10,6 +10,7 @@ import {
   checkInUser,
   getParkReportCount,
 } from "@/app/parks/actions";
+import { sendFriendRequest } from "@/app/friends/actions";
 const LoadingText = () => <div>Loading...</div>;
 // This component takes the ID of the park it should track as a prop.
 const ParkPlayerCount = ({ park }: { park: Park }) => {
@@ -28,11 +29,12 @@ const ParkPlayerCount = ({ park }: { park: Park }) => {
   const [isLoadingInitialData, setIsLoadingInitialData] = useState(true);
   const [isCheckInOutLoading, setIsCheckInOutLoading] = useState(false);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
-
+  const [users, setUsers] = useState<{ id: string; name: string }[]>([]);
   useEffect(() => {
     const loadInitialData = async () => {
       // Promise.all runs these two checks concurrently
-      const [statusResponse, countResult, reportCountResult] =
+      // TODO: Question what if it is a network error?
+      const [statusResponse, countResult, reportCountResult, namesResponse] =
         await Promise.all([
           getUserCheckInStatus(parkId),
           supabase
@@ -41,6 +43,12 @@ const ParkPlayerCount = ({ park }: { park: Park }) => {
             .eq("park_id", parkId)
             .is("check_out_time", null),
           getParkReportCount(parkId),
+          await supabase
+            .from("check_in")
+            .select("user_id, profile(name)")
+            .eq("park_id", parkId)
+            .is("check_out_time", null),
+          // TODO: Add grabbing all users in this park
         ]);
 
       // Update state with the results
@@ -53,6 +61,15 @@ const ParkPlayerCount = ({ park }: { park: Park }) => {
       if (reportCountResult.success && reportCountResult.data !== null) {
         setReportedPlayerCount(reportCountResult.data ?? 0);
       }
+      if (!namesResponse.error && namesResponse.data !== null) {
+        setUsers(
+          namesResponse.data.map((user) => ({
+            id: user.user_id,
+            name: user.profile.name ?? "",
+          }))
+        );
+      }
+      console.log("namesResponse", namesResponse);
       setIsLoadingInitialData(false);
     };
 
@@ -186,105 +203,6 @@ const ParkPlayerCount = ({ park }: { park: Park }) => {
     setIsCheckInOutLoading(false);
   };
 
-  // // const handleCheckoutUser = async () => {
-  // //   setIsCheckInOutLoading(true);
-  // //   setMessage(null);
-  // //   const response = await checkoutUser(parkId);
-  // //   setMessage({
-  // //     text: response.message || "Action complete.",
-  // //     success: response.success,
-  // //   });
-  // //   if (response.success) {
-  // //     setIsCheckedIn(false);
-  // //   }
-  // //   setIsCheckInOutLoading(false);
-  // // };
-
-  //       setIsCheckedIn(false);
-  //     } else {
-  //       alert(
-  //         response.message ||
-  //           "Failed to checkout from park. Please try again later."
-  //       );
-  //     }
-  //   });
-  // };
-
-  // const handleCheckIn = () => {
-  //   startTransition(async () => {
-  //     const response = await checkInUser(parkId);
-  //     if (response.success) {
-  //       alert(response.message || "Successfully checked in to park!");
-  //       setIsCheckedIn(true);
-  //     } else {
-  //       alert(
-  //         response.message ||
-  //           "Failed to check in to park. Please try again later."
-  //       );
-  //     }
-  //   });
-  // };
-
-  // useEffect(() => {
-  //   const checkInStatus = async () => {
-  //     const { success, data } = await getUserCheckInStatus(parkId);
-  //     // If the call is successful and data is truthy, user is checked in
-  //     if (success && data) {
-  //       setIsCheckedIn(true);
-  //     } else {
-  //       setIsCheckedIn(false);
-  //     }
-  //   };
-  //   checkInStatus();
-  // }, [parkId]);
-  // // This useEffect handles the initial load and the realtime subscription
-  // useEffect(() => {
-  //   let isMounted = true;
-
-  //   // Wrap async logic in an IIFE
-  //   (async () => {
-  //     // 1. Initial Data Load
-  //     await fetchParkCount();
-  //     if (isMounted) setIsInitialLoading(false);
-
-  //     // 2. Realtime Subscription
-  //     const channelName = `parks:${parkId}`;
-  //     await supabase.realtime.setAuth();
-  //     const channel = supabase.channel(channelName, {
-  //       config: { private: true },
-  //     });
-  //     channel
-  //       .on("broadcast", { event: "*" }, (payload) => {
-  //         console.log(`Realtime event for park ${parkId}:`, payload);
-  //         fetchParkCount();
-  //       })
-  //       .subscribe((status, err) => {
-  //         if (status === "SUBSCRIBED") {
-  //           console.log(
-  //             `Successfully subscribed to authorized channel: ${channelName}`
-  //           );
-  //         }
-  //         if (status === "CHANNEL_ERROR") {
-  //           console.error(
-  //             `Failed to subscribe to channel ${channelName}. Error:`,
-  //             err
-  //           );
-  //         }
-  //       });
-
-  //     // 3. Cleanup Function
-  //     return () => {
-  //       isMounted = false;
-  //       supabase.removeChannel(channel);
-  //     };
-  //   })();
-
-  //   // Cleanup for effect
-  //   return () => {
-  //     isMounted = false;
-  //   };
-  // }, [supabase, parkId, fetchParkCount]);
-
   // Render Logic
   if (isLoadingInitialData) {
     return <p>Loading park details...</p>;
@@ -312,6 +230,29 @@ const ParkPlayerCount = ({ park }: { park: Park }) => {
           Reported Players at this park:
         </h3>
         <p className="text-3xl font-bold mt-1">{reportedPlayerCount}</p>
+        <h3 className="text-base font-medium mb-2">Players Checked In:</h3>
+        <ul className="mb-2 w-full">
+          {users.map((user) => (
+            <li
+              key={user.id}
+              className="flex items-center justify-between py-1 border-b last:border-b-0"
+            >
+              <span className="font-mono text-sm">{user.name}</span>
+              <button
+                className="ml-2 px-2 py-1 rounded bg-blue-500 text-white hover:bg-blue-600 text-xs"
+                onClick={async () => {
+                  const res = await sendFriendRequest(user.id);
+                  setMessage({
+                    text: res.message || "Friend request sent!",
+                    success: res.success,
+                  });
+                }}
+              >
+                Add Friend
+              </button>
+            </li>
+          ))}
+        </ul>
         {isCheckedIn ? (
           <button
             className="mt-2 px-4 py-2 w-28 h-10 rounded bg-yellow-500 text-white hover:bg-yellow-600 text-sm disabled:opacity-50 flex items-center justify-center"
