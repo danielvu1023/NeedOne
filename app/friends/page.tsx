@@ -1,6 +1,7 @@
 // app/friends/page.js
 
 import { getFriendsList, getFriendRequests } from "./actions";
+import AcceptFriendRequestButton from "@/components/friends/accept-friend-request-button";
 
 export default async function FriendsPage() {
   const { friends, error } = await getFriendsList();
@@ -27,6 +28,7 @@ export default async function FriendsPage() {
         {requests?.map((req) => (
           <li key={req.id}>
             From: {req.sender?.name || req.sender_id} ({req.sender_id})
+            <AcceptFriendRequestButton senderId={req.sender_id} />
           </li>
         ))}
       </ul>
