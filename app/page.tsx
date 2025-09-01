@@ -35,13 +35,21 @@ export default async function Home() {
           <ParkPlayerCount key={park.id} park={park} />
         ))}
       </div>
-      <Link
-        href="/notifications"
-        className="mt-8 text-blue-600 hover:underline text-lg"
-      >
-        Go to Notifications
-      </Link>
-      <SignOutButton></SignOutButton>
+      <div className="mt-8 flex flex-col items-center gap-4">
+        <Link
+          href="/test"
+          className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+        >
+          Go to My Parks (Test)
+        </Link>
+        <Link
+          href="/notifications"
+          className="text-blue-600 hover:underline text-lg"
+        >
+          Go to Notifications
+        </Link>
+        <SignOutButton></SignOutButton>
+      </div>
     </div>
   );
 }
