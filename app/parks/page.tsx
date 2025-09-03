@@ -1,26 +1,32 @@
-import { createClient } from "@/utils/supabase/server";
-
-import ParkCard from "@/components/ui/park-card";
+// app/add-park-test/page.tsx
+import Navbar from "@/components/ui/navbar";
+import AddParkCard from "@/components/ui/add-park-card";
+import { AddParkCardSkeleton } from "@/components/ui/add-park-card-skeleton";
+import { ArrowLeft } from "lucide-react";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
+import { createClient } from "@/utils/supabase/server";
 import InfoMessage from "@/components/ui/info-message";
-export default async function ParksPage() {
-  // Get user session from Supabase
+import Link from "next/link";
+
+export default async function AddParkTestPage() {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
   if (error || !data?.user) {
     redirect("/login");
   }
-
   const userId = data.user.id;
+  console.log("userId", userId);
   const { data: parksData, error: parksError } = await supabase
-    .from("park")
+    .from("parks")
     .select();
 
   if (parksError) {
     throw new Error("Failed to fetch parks");
   }
   let parks = parksData ?? [];
-  if (parks.length === 0) {
+
+  if (!parks || parks.length === 0) {
     return (
       <InfoMessage title="No Parks Available">
         It seems there are no parks available at the moment. Please check back
@@ -47,10 +53,29 @@ export default async function ParksPage() {
     );
   }
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {parksToAdd?.map((park) => (
-        <ParkCard key={park.id} park={park} />
-      ))}
+    <div className="min-w-80 max-w-[728px] mx-auto">
+      <Navbar />
+      <div className="pt-20 p-4 space-y-6">
+        <div>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 mb-4 hover:bg-accent hover:text-accent-foreground h-9 px-3 rounded-md text-sm font-medium transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to My Parks
+          </Link>
+          <h1 className="text-2xl font-bold mb-2">Add Parks</h1>
+          <p className="text-muted-foreground">
+            Find and add parks to your list
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          {parksToAdd.map((park) => (
+            <AddParkCard key={park.id} park={park} />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

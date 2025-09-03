@@ -3,8 +3,9 @@ import { ApiDataResponse, ApiResponse } from "@/lib/types";
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-export async function addParkForUser(parkId: number): Promise<ApiResponse> {
+export async function addParkForUser(parkId: string): Promise<ApiResponse> {
   try {
+    debugger;
     const supabase = await createClient();
     const { data, error: userError } = await supabase.auth.getUser();
 
@@ -84,7 +85,7 @@ export async function checkoutUser(parkId: number): Promise<ApiResponse> {
 
     const userId = data.user.id;
     const { error: checkoutError } = await supabase
-      .from("check_in")
+      .from("check_ins")
       // 1. Specify the data to update.
       .update({
         check_out_time: new Date().toISOString(),
@@ -128,7 +129,7 @@ export async function checkInUser(parkId: number): Promise<ApiResponse> {
 
     // Step 2: Call the PostgreSQL function via RPC
     // This is the core logic. We pass the parkId to our custom function.
-    const { error: rpcError } = await supabase.rpc("check_in_user", {
+    const { error: rpcError } = await supabase.rpc("check_ins_user", {
       park_id_to_check_in: parkId,
     });
 
@@ -173,7 +174,7 @@ export async function getUserCheckInStatus(
 
     // We don't need the data, just the count. This is a very efficient query.
     const { count, error } = await supabase
-      .from("check_in")
+      .from("check_ins")
       .select("*", { count: "exact", head: true }) // head: true is key!
       .match({ user_id: user.id, park_id: parkId })
       .is("check_out_time", null);
@@ -218,7 +219,7 @@ export async function getParkReportCount(
 export async function getAllParks() {
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase.from("park").select("*");
+    const { data, error } = await supabase.from("parks").select("*");
 
     if (error) {
       console.error("Error fetching parks:", error);

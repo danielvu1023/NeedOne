@@ -16,7 +16,44 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { MapPin, Users, Clock, ShieldCheck, MoreVertical, Grid3X3, Zap, Sun, Home, Lock } from "lucide-react";
+import {
+  MapPin,
+  Users,
+  Clock,
+  ShieldCheck,
+  MoreVertical,
+  Grid3X3,
+  Zap,
+  Sun,
+  Home,
+  Lock,
+  Timer,
+  Wifi,
+  WifiOff,
+} from "lucide-react";
+import { formatTimeAgo } from "@/lib/utils";
+
+// Custom time formatter for sec/min display
+const formatTimeAgoShort = (timestamp: string | null) => {
+  if (!timestamp) return "N/A";
+
+  const now = new Date();
+  const time = new Date(timestamp);
+  const diffInSeconds = Math.floor((now.getTime() - time.getTime()) / 1000);
+
+  if (diffInSeconds < 60) {
+    return `${diffInSeconds}s`;
+  } else if (diffInSeconds < 3600) {
+    const minutes = Math.floor(diffInSeconds / 60);
+    return `${minutes}m`;
+  } else if (diffInSeconds < 86400) {
+    const hours = Math.floor(diffInSeconds / 3600);
+    return `${hours}h`;
+  } else {
+    const days = Math.floor(diffInSeconds / 86400);
+    return `${days}d`;
+  }
+};
 
 interface ParkCardProps {
   park?: {
@@ -32,9 +69,9 @@ interface ParkCardProps {
     lastReportTime?: string;
     tags?: {
       courts: number;
-      net: 'permanent' | 'bring-own';
-      environment: 'outdoor' | 'indoor';
-      access: 'public' | 'private';
+      net: "permanent" | "bring-own";
+      environment: "outdoor" | "indoor";
+      access: "public" | "private";
     };
   };
   isCheckedIn?: boolean;
@@ -43,18 +80,26 @@ interface ParkCardProps {
   checkedInParkName?: string;
 }
 
-const ParkCard: FC<ParkCardProps> = ({ 
-  park, 
-  isCheckedIn = false, 
-  onCheckIn, 
+const ParkCard: FC<ParkCardProps> = ({
+  park,
+  isCheckedIn = false,
+  onCheckIn,
   isDisabled = false,
-  checkedInParkName
+  checkedInParkName,
 }) => {
   const [isPending, setIsPending] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [showModeratorInput, setShowModeratorInput] = useState(false);
-  const [moderatorCount, setModeratorCount] = useState("");
+  const [moderatorCount, setModeratorCount] = useState(
+    park.latest_report_count || 0
+  );
+  const checkInCount = park.active_check_in_count;
+  const courtCapacity = park.courts * 4;
 
+  // Determine if park is online based on activity
+  const isOnline =
+    checkInCount > 0 ||
+    (park.latest_report_count && park.latest_report_count > 0);
   // Mock data if no park prop provided
   const mockPark = park || {
     id: 1,
@@ -69,9 +114,9 @@ const ParkCard: FC<ParkCardProps> = ({
     lastReportTime: "1 min ago",
     tags: {
       courts: 4,
-      net: 'permanent',
-      environment: 'outdoor',
-      access: 'public'
+      net: "permanent",
+      environment: "outdoor",
+      access: "public",
     },
   };
 
@@ -87,14 +132,16 @@ const ParkCard: FC<ParkCardProps> = ({
 
   const handleDisabledClick = () => {
     if (isDisabled && checkedInParkName) {
-      alert(`You must check out of "${checkedInParkName}" before you can check into another park.`);
+      alert(
+        `You must check out of "${checkedInParkName}" before you can check into another park.`
+      );
     }
   };
 
   const handleRemovePark = () => {
     setIsRemoving(true);
     setTimeout(() => {
-      alert(`Park "${mockPark.name}" removed from your list!`);
+      alert(`Park "${park.name}" removed from your list!`);
       setIsRemoving(false);
     }, 1000);
   };
@@ -116,10 +163,24 @@ const ParkCard: FC<ParkCardProps> = ({
       >
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-poppins font-semibold">{mockPark.name}</CardTitle>
+            <CardTitle className="text-lg font-poppins font-semibold">
+              {park.name}
+            </CardTitle>
             <div className="flex items-center gap-2">
-              <Badge variant={mockPark.isActive ? "default" : "secondary"}>
-                {mockPark.isActive ? "Active" : "Inactive"}
+              <Badge
+                variant={isOnline ? "default" : "secondary"}
+                className="flex items-center gap-1"
+              >
+                <span className="hidden min-[425px]:inline">
+                  {isOnline ? "Online" : "Offline"}
+                </span>
+                <span className="min-[425px]:hidden">
+                  {isOnline ? (
+                    <Wifi className="h-3 w-3" />
+                  ) : (
+                    <WifiOff className="h-3 w-3" />
+                  )}
+                </span>
               </Badge>
 
               <DropdownMenu>
@@ -152,21 +213,30 @@ const ParkCard: FC<ParkCardProps> = ({
           </div>
           <div className="flex items-center text-sm text-muted-foreground font-inter">
             <MapPin className="h-5 w-5 mr-2" />
-            {mockPark.location}
+            {park.location}
           </div>
-          
+
           {/* Tags */}
           <div className="flex flex-wrap gap-1 mt-2">
-            <Badge variant="secondary" className="text-xs flex items-center gap-1 font-inter">
+            <Badge
+              variant="outline"
+              className="text-xs flex items-center gap-1 font-inter"
+            >
               <Grid3X3 className="h-3 w-3" />
-              <span className="font-jetbrains-mono">{mockPark.tags?.courts}</span> courts
+              <span className="font-jetbrains-mono">{park.courts}</span> courts
             </Badge>
-            <Badge variant="outline" className="text-xs flex items-center gap-1 font-inter">
+            <Badge
+              variant="outline"
+              className="text-xs flex items-center gap-1 font-inter"
+            >
               <Zap className="h-3 w-3" />
-              {mockPark.tags?.net === 'permanent' ? 'Permanent net' : 'Bring own net'}
+              {park.net === "permanent" ? "Permanent net" : "Bring own net"}
             </Badge>
-            <Badge variant="outline" className="text-xs flex items-center gap-1 font-inter">
-              {mockPark.tags?.environment === 'outdoor' ? (
+            <Badge
+              variant="outline"
+              className="text-xs flex items-center gap-1 font-inter"
+            >
+              {park.environment === "outdoor" ? (
                 <>
                   <Sun className="h-3 w-3" />
                   Outdoor
@@ -178,8 +248,11 @@ const ParkCard: FC<ParkCardProps> = ({
                 </>
               )}
             </Badge>
-            <Badge variant="outline" className="text-xs flex items-center gap-1 font-inter">
-              {mockPark.tags?.access === 'public' ? (
+            <Badge
+              variant="outline"
+              className="text-xs flex items-center gap-1 font-inter"
+            >
+              {park.access === "public" ? (
                 <>
                   <Users className="h-3 w-3" />
                   Public
@@ -199,38 +272,53 @@ const ParkCard: FC<ParkCardProps> = ({
             <div className="flex items-center font-inter">
               <Users className="h-5 w-5 mr-2" />
               <span>
-                <span className="font-jetbrains-mono font-semibold player-count">{mockPark.currentPlayers}/{mockPark.maxPlayers}</span> players
+                <span className="font-jetbrains-mono font-semibold player-count">
+                  {checkInCount}/{courtCapacity}
+                </span>{" "}
+                players
               </span>
             </div>
             <div className="flex items-center text-muted-foreground font-inter">
               <Clock className="h-4 w-4 mr-1" />
-              <span className="time-display">{mockPark.lastActivity}</span>
+              <span className="time-display text-xs">
+                {formatTimeAgoShort(park.latest_check_in_time)} ago
+              </span>
             </div>
           </div>
+
+          {/* Queue display when over capacity */}
+          {checkInCount > courtCapacity && (
+            <div className="flex items-center text-sm font-inter">
+              <Timer className="h-4 w-4 mr-2" />
+              <span className="font-jetbrains-mono font-semibold">
+                {checkInCount - courtCapacity}
+              </span>
+              <span className="ml-1 ">queued</span>
+            </div>
+          )}
 
           {/* Capacity bar */}
           <div className="space-y-1">
             <div className="flex justify-between text-xs text-muted-foreground font-inter">
               <span>Capacity</span>
               <span className="font-jetbrains-mono">
-                {Math.round(
-                  (mockPark.currentPlayers / mockPark.maxPlayers) * 100
-                )}%
+                {Math.round((checkInCount / courtCapacity) * 100)}%
               </span>
             </div>
             <div className="w-full bg-muted rounded-full h-2">
               <div
                 className={`h-2 rounded-full transition-all duration-300 ${
-                  mockPark.currentPlayers / mockPark.maxPlayers >= 1
+                  checkInCount / courtCapacity >= 1
                     ? "bg-red-500"
-                    : mockPark.currentPlayers / mockPark.maxPlayers >= 0.6
+                    : checkInCount / courtCapacity >= 0.6
                     ? "bg-yellow-500"
                     : "bg-green-500"
                 }`}
                 style={{
-                  width: `${
-                    (mockPark.currentPlayers / mockPark.maxPlayers) * 100
-                  }%`,
+                  width: `${Math.min(
+                    (checkInCount / courtCapacity) * 100,
+                    100
+                  )}%`,
                 }}
               />
             </div>
@@ -247,47 +335,70 @@ const ParkCard: FC<ParkCardProps> = ({
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p className="font-inter">Player count verified by park moderators</p>
+                  <p className="font-inter">
+                    Player count verified by park moderators
+                  </p>
                 </TooltipContent>
               </Tooltip>
               <span>
-                <span className="font-jetbrains-mono font-semibold player-count">{mockPark.reportedPlayers}/{mockPark.maxPlayers}</span> players
+                <span className="font-jetbrains-mono font-semibold player-count">
+                  {moderatorCount}/{courtCapacity}
+                </span>{" "}
+                players
               </span>
-              {mockPark.hasModeratorReport && (
-                <Badge variant="outline" className="text-xs font-inter">
-                  Verified
+              {moderatorCount !== 0 && (
+                <Badge
+                  variant="outline"
+                  className="text-xs font-inter flex items-center gap-1"
+                >
+                  <span className="hidden min-[425px]:inline">Verified</span>
+                  <span className="min-[425px]:hidden">
+                    <ShieldCheck className="h-3 w-3" />
+                  </span>
                 </Badge>
               )}
             </div>
             <div className="flex items-center text-muted-foreground font-inter">
               <Clock className="h-4 w-4 mr-1" />
-              <span className="time-display">{mockPark.lastReportTime}</span>
+              <span className="time-display text-xs">
+                {formatTimeAgoShort(park.latest_report_created_at)} ago
+              </span>
             </div>
           </div>
+
+          {/* Queue display for moderator count when over capacity */}
+          {moderatorCount > courtCapacity && (
+            <div className="flex items-center text-sm font-inter">
+              <Timer className="h-4 w-4 mr-2" />
+              <span className="font-jetbrains-mono font-semibold">
+                {moderatorCount - courtCapacity}
+              </span>
+              <span className="ml-1 ">queued</span>
+            </div>
+          )}
 
           {/* Moderator reported capacity bar */}
           <div className="space-y-1 mb-5">
             <div className="flex justify-between text-xs text-muted-foreground font-inter">
               <span>Reported Capacity</span>
               <span className="font-jetbrains-mono">
-                {Math.round(
-                  (mockPark.reportedPlayers / mockPark.maxPlayers) * 100
-                )}%
+                {Math.round((moderatorCount / courtCapacity) * 100)}%
               </span>
             </div>
             <div className="w-full bg-muted rounded-full h-2">
               <div
                 className={`h-2 rounded-full transition-all duration-300 ${
-                  mockPark.reportedPlayers / mockPark.maxPlayers >= 1
+                  moderatorCount / courtCapacity >= 1
                     ? "bg-red-500"
-                    : mockPark.reportedPlayers / mockPark.maxPlayers >= 0.6
+                    : moderatorCount / courtCapacity >= 0.6
                     ? "bg-yellow-500"
                     : "bg-green-500"
                 }`}
                 style={{
-                  width: `${
-                    (mockPark.reportedPlayers / mockPark.maxPlayers) * 100
-                  }%`,
+                  width: `${Math.min(
+                    (moderatorCount / courtCapacity) * 100,
+                    100
+                  )}%`,
                 }}
               />
             </div>
@@ -298,7 +409,9 @@ const ParkCard: FC<ParkCardProps> = ({
             <div className="space-y-2 p-3 bg-blue-50 rounded-lg">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-800 font-poppins">Moderator Update</span>
+                <span className="text-sm font-medium text-blue-800 font-poppins">
+                  Moderator Update
+                </span>
               </div>
               <div className="flex gap-2">
                 <Input
@@ -308,7 +421,7 @@ const ParkCard: FC<ParkCardProps> = ({
                   onChange={(e) => setModeratorCount(e.target.value)}
                   className="flex-1"
                 />
-                <Button 
+                <Button
                   onClick={handleModeratorUpdate}
                   size="sm"
                   disabled={!moderatorCount}
@@ -323,16 +436,17 @@ const ParkCard: FC<ParkCardProps> = ({
             onClick={isDisabled ? handleDisabledClick : handleCheckIn}
             disabled={isPending}
             className="w-full"
-            variant={isCheckedIn ? "outline" : isDisabled ? "secondary" : "default"}
-          >
-            {isPending 
-              ? "Loading..." 
-              : isCheckedIn 
-                ? "Check Out" 
-                : isDisabled 
-                  ? "Check in disabled" 
-                  : "Check In"
+            variant={
+              isCheckedIn ? "outline" : isDisabled ? "secondary" : "default"
             }
+          >
+            {isPending
+              ? "Loading..."
+              : isCheckedIn
+              ? "Check Out"
+              : isDisabled
+              ? "Check in disabled"
+              : "Check In"}
           </Button>
         </CardContent>
       </Card>

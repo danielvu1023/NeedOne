@@ -1,17 +1,26 @@
 "use client";
-import React, { FC, useState } from "react";
+import React, { FC, useState, useTransition } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Plus, Grid3X3, Zap, Sun, Home, Users, Lock } from "lucide-react";
-
+import {
+  MapPin,
+  Plus,
+  Grid3X3,
+  Zap,
+  Sun,
+  Home,
+  Users,
+  Lock,
+} from "lucide-react";
+import { addParkForUser } from "@/app/parks/actions";
 interface AddParkCardProps {
-  park?: {
-    id: number;
+  park: {
+    id: string;
     name: string;
     location: string;
     courts: number;
-    tags?: {
+    tags: {
       net: "permanent" | "bring-own";
       environment: "outdoor" | "indoor";
       access: "public" | "private";
@@ -20,54 +29,44 @@ interface AddParkCardProps {
 }
 
 const AddParkCard: FC<AddParkCardProps> = ({ park }) => {
-  const [isPending, setIsPending] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   // Mock data if no park prop provided
-  const mockPark = park || {
-    id: 1,
-    name: "Central Basketball Court",
-    location: "Downtown Park, Main Street",
-    courts: 4,
-    tags: {
-      net: "permanent",
-      environment: "outdoor",
-      access: "public",
-    },
-  };
-
-  const handleAddPark = () => {
-    setIsPending(true);
-    setTimeout(() => {
-      alert(`"${mockPark.name}" added to your parks!`);
-      setIsPending(false);
-    }, 1000);
-  };
 
   return (
     <Card className="park-card transition-all duration-200 hover:shadow-lg">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg font-poppins font-semibold">{mockPark.name}</CardTitle>
+        <CardTitle className="text-lg font-poppins font-semibold">
+          {park.name}
+        </CardTitle>
         <div className="flex items-center justify-between text-sm text-muted-foreground font-inter">
           <div className="flex items-center">
             <MapPin className="h-5 w-5 mr-2" />
-            {mockPark.location}
+            {park.location}
           </div>
         </div>
 
         {/* Tags */}
         <div className="flex flex-wrap gap-1 mt-2">
-          <Badge variant="secondary" className="text-xs flex items-center gap-1 font-inter">
+          <Badge
+            variant="secondary"
+            className="text-xs flex items-center gap-1 font-inter"
+          >
             <Grid3X3 className="h-3 w-3" />
-            <span className="font-jetbrains-mono">{mockPark.courts}</span> courts
+            <span className="font-jetbrains-mono">{park.courts}</span> courts
           </Badge>
-          <Badge variant="outline" className="text-xs flex items-center gap-1 font-inter">
+          <Badge
+            variant="outline"
+            className="text-xs flex items-center gap-1 font-inter"
+          >
             <Zap className="h-3 w-3" />
-            {mockPark.tags?.net === "permanent"
-              ? "Permanent net"
-              : "Bring own net"}
+            {park.tags.net === "permanent" ? "Permanent net" : "Bring own net"}
           </Badge>
-          <Badge variant="outline" className="text-xs flex items-center gap-1 font-inter">
-            {mockPark.tags?.environment === "outdoor" ? (
+          <Badge
+            variant="outline"
+            className="text-xs flex items-center gap-1 font-inter"
+          >
+            {park.tags.environment === "outdoor" ? (
               <>
                 <Sun className="h-3 w-3" />
                 Outdoor
@@ -79,8 +78,11 @@ const AddParkCard: FC<AddParkCardProps> = ({ park }) => {
               </>
             )}
           </Badge>
-          <Badge variant="outline" className="text-xs flex items-center gap-1 font-inter">
-            {mockPark.tags?.access === "public" ? (
+          <Badge
+            variant="outline"
+            className="text-xs flex items-center gap-1 font-inter"
+          >
+            {park?.tags?.access === "public" ? (
               <>
                 <Users className="h-3 w-3" />
                 Public
@@ -96,7 +98,15 @@ const AddParkCard: FC<AddParkCardProps> = ({ park }) => {
       </CardHeader>
 
       <CardContent>
-        <Button onClick={handleAddPark} disabled={isPending} className="w-full">
+        <Button
+          onClick={() =>
+            startTransition(async () => {
+              await addParkForUser(park?.id);
+            })
+          }
+          disabled={isPending}
+          className="w-full"
+        >
           <Plus className="h-4 w-4 mr-2" />
           {isPending ? "Adding..." : "Add to my parks"}
         </Button>

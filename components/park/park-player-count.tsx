@@ -38,13 +38,13 @@ const ParkPlayerCount = ({ park }: { park: Park }) => {
         await Promise.all([
           getUserCheckInStatus(parkId),
           supabase
-            .from("check_in")
+            .from("check_ins")
             .select("*", { count: "exact", head: true })
             .eq("park_id", parkId)
             .is("check_out_time", null),
           getParkReportCount(parkId),
           await supabase
-            .from("check_in")
+            .from("check_ins")
             .select("user_id, profile(name)")
             .eq("park_id", parkId)
             .is("check_out_time", null),
@@ -88,7 +88,7 @@ const ParkPlayerCount = ({ park }: { park: Park }) => {
           console.log(`Realtime check-in event for park ${parkId}:`, payload);
           const fetchCount = async () => {
             const { count } = await supabase
-              .from("check_in")
+              .from("check_ins")
               .select("*", { count: "exact", head: true })
               .eq("park_id", parkId)
               .is("check_out_time", null);
@@ -151,7 +151,7 @@ const ParkPlayerCount = ({ park }: { park: Park }) => {
   // A memoized function to get the accurate count from the database
   // const fetchParkCount = useCallback(async () => {
   //   const { count, error } = await supabase
-  //     .from("check_in")
+  //     .from("check_ins")
   //     .select("*", { count: "exact", head: true })
   //     // Condition 1: Match the specific park
   //     .eq("park_id", parkId)

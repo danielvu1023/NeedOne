@@ -16,7 +16,7 @@ export async function getFriendsList() {
   }
   const { data: friends, error: friendsError } = await supabase
     .from("friendships")
-    .select("profile:user_id_2(id, name)")
+    .select("profiles:user_id_2(id, name)")
     .eq("user_id_1", user.id);
 
   // 2. We need two queries because the user can be in either column.
