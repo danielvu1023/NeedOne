@@ -46,8 +46,8 @@ const AddParkCard: FC<AddParkCardProps> = ({ park }) => {
   return (
     <Card className="park-card transition-all duration-200 hover:shadow-lg">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg">{mockPark.name}</CardTitle>
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
+        <CardTitle className="text-lg font-poppins font-semibold">{mockPark.name}</CardTitle>
+        <div className="flex items-center justify-between text-sm text-muted-foreground font-inter">
           <div className="flex items-center">
             <MapPin className="h-5 w-5 mr-2" />
             {mockPark.location}
@@ -56,17 +56,17 @@ const AddParkCard: FC<AddParkCardProps> = ({ park }) => {
 
         {/* Tags */}
         <div className="flex flex-wrap gap-1 mt-2">
-          <Badge variant="secondary" className="text-xs flex items-center gap-1">
+          <Badge variant="secondary" className="text-xs flex items-center gap-1 font-inter">
             <Grid3X3 className="h-3 w-3" />
-            {mockPark.courts} courts
+            <span className="font-jetbrains-mono">{mockPark.courts}</span> courts
           </Badge>
-          <Badge variant="outline" className="text-xs flex items-center gap-1">
+          <Badge variant="outline" className="text-xs flex items-center gap-1 font-inter">
             <Zap className="h-3 w-3" />
             {mockPark.tags?.net === "permanent"
               ? "Permanent net"
               : "Bring own net"}
           </Badge>
-          <Badge variant="outline" className="text-xs flex items-center gap-1">
+          <Badge variant="outline" className="text-xs flex items-center gap-1 font-inter">
             {mockPark.tags?.environment === "outdoor" ? (
               <>
                 <Sun className="h-3 w-3" />
@@ -79,7 +79,7 @@ const AddParkCard: FC<AddParkCardProps> = ({ park }) => {
               </>
             )}
           </Badge>
-          <Badge variant="outline" className="text-xs flex items-center gap-1">
+          <Badge variant="outline" className="text-xs flex items-center gap-1 font-inter">
             {mockPark.tags?.access === "public" ? (
               <>
                 <Users className="h-3 w-3" />

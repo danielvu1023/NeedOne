@@ -70,7 +70,7 @@ export default function Navbar() {
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
               <User className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold">NeedOne</span>
+              <span className="text-xl font-bold font-poppins brand">NeedOne</span>
             </button>
           </div>
 
@@ -81,21 +81,21 @@ export default function Navbar() {
               if (!open) resetForm();
             }}>
               <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" className="flex items-center gap-2 font-inter">
                   <MessageSquare className="h-4 w-4" />
                   Feedback
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-sm mx-auto">
                 <DialogHeader className="flex flex-row items-center justify-between">
-                  <DialogTitle className="flex items-center gap-2">
+                  <DialogTitle className="flex items-center gap-2 font-poppins font-semibold">
                     <MessageSquare className="h-5 w-5" />
                     Share Your Feedback
                   </DialogTitle>
                 </DialogHeader>
                 
                 <div className="space-y-4 pt-4">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground font-inter">
                     Help us improve NeedOne by sharing your thoughts and suggestions.
                   </p>
                   

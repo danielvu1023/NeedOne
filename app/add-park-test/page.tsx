@@ -2,9 +2,11 @@
 "use client";
 import Navbar from "@/components/ui/navbar";
 import AddParkCard from "@/components/ui/add-park-card";
+import { AddParkCardSkeleton } from "@/components/ui/add-park-card-skeleton";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
 const mockParks = [
   {
@@ -66,6 +68,18 @@ const mockParks = [
 
 export default function AddParkTestPage() {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+  const [parks, setParks] = useState([]);
+
+  useEffect(() => {
+    // Simulate loading
+    const timer = setTimeout(() => {
+      setParks(mockParks);
+      setIsLoading(false);
+    }, 1200);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="min-w-80 max-w-[728px] mx-auto">
@@ -86,9 +100,13 @@ export default function AddParkTestPage() {
         </div>
         
         <div className="flex flex-col gap-4">
-          {mockParks.map((park) => (
-            <AddParkCard key={park.id} park={park} />
-          ))}
+          {isLoading
+            ? Array.from({ length: 5 }).map((_, index) => (
+                <AddParkCardSkeleton key={index} />
+              ))
+            : parks.map((park) => (
+                <AddParkCard key={park.id} park={park} />
+              ))}
         </div>
         
         <div>

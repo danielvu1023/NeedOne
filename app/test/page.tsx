@@ -2,9 +2,11 @@
 "use client";
 import Navbar from "@/components/ui/navbar";
 import ParkCard from "@/components/ui/park-card";
+import { ParkCardSkeleton } from "@/components/ui/park-card-skeleton";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
 const mockParks = [
   {
@@ -83,6 +85,31 @@ const mockParks = [
 
 export default function TestPage() {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+  const [parks, setParks] = useState([]);
+  const [checkedInParkId, setCheckedInParkId] = useState(null);
+
+  useEffect(() => {
+    // Simulate loading
+    const timer = setTimeout(() => {
+      setParks(mockParks);
+      setIsLoading(false);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleCheckIn = (parkId) => {
+    if (checkedInParkId === parkId) {
+      // Check out of current park
+      setCheckedInParkId(null);
+    } else {
+      // Check into new park (only if not checked in anywhere else)
+      if (!checkedInParkId) {
+        setCheckedInParkId(parkId);
+      }
+    }
+  };
 
   return (
     <div className="min-w-80 max-w-[728px] mx-auto">
@@ -115,9 +142,23 @@ export default function TestPage() {
         </div>
 
         <div className="flex flex-col gap-4">
-          {mockParks.map((park) => (
-            <ParkCard key={park.id} park={park} />
-          ))}
+          {isLoading
+            ? Array.from({ length: 4 }).map((_, index) => (
+                <ParkCardSkeleton key={index} />
+              ))
+            : parks.map((park) => {
+                const checkedInPark = parks.find(p => p.id === checkedInParkId);
+                return (
+                  <ParkCard 
+                    key={park.id} 
+                    park={park}
+                    isCheckedIn={checkedInParkId === park.id}
+                    onCheckIn={() => handleCheckIn(park.id)}
+                    isDisabled={checkedInParkId !== null && checkedInParkId !== park.id}
+                    checkedInParkName={checkedInPark?.name}
+                  />
+                );
+              })}
         </div>
 
         <div>
