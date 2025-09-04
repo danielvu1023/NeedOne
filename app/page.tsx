@@ -107,7 +107,7 @@ export default async function TestPage() {
   //         `
   //   )
   //   .eq("user_id", userId);
-  const userParks = supabase.rpc("get_user_park_details", {
+  const userParks = supabase.rpc("get_user_parks_with_details", {
     p_user_id: userId,
   });
   // if (parkUsersError) {
@@ -133,6 +133,7 @@ export default async function TestPage() {
   // }
 
   // const userParks = parkUsersData?.map((item) => item.parks) || [];
+
   return (
     <div className="min-w-80 max-w-[728px] mx-auto">
       <Navbar />

@@ -1,5 +1,5 @@
 "use client";
-import React, { FC, useState } from "react";
+import React, { FC, use, useEffect, useState, useTransition } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +32,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import { formatTimeAgo } from "@/lib/utils";
+import { checkInUser, checkoutUser } from "@/app/parks/actions";
 
 // Custom time formatter for sec/min display
 const formatTimeAgoShort = (timestamp: string | null) => {
@@ -93,6 +94,9 @@ const ParkCard: FC<ParkCardProps> = ({
   const [moderatorCount, setModeratorCount] = useState(
     park.latest_report_count || 0
   );
+  const [isCheckInPending, startCheckInTransition] = useTransition();
+  const [isCheckoutPending, startCheckoutTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const checkInCount = park.active_check_in_count;
   const courtCapacity = park.courts * 4;
 
@@ -120,14 +124,34 @@ const ParkCard: FC<ParkCardProps> = ({
     },
   };
 
-  const handleCheckIn = () => {
-    if (onCheckIn) {
-      setIsPending(true);
-      setTimeout(() => {
-        onCheckIn();
-        setIsPending(false);
-      }, 1000);
-    }
+  const handleToggleCheckIn = () => {
+    startCheckInTransition(async () => {
+      // 1. Define the action and corresponding messages based on the state
+      const action = isCheckedIn ? checkoutUser : checkInUser;
+      const errorMessage = isCheckedIn
+        ? "There was an error checking out. Please try again."
+        : "There was an error checking in. Please try again.";
+
+      try {
+        // 2. Execute the chosen action
+        const result = await action(park.id);
+
+        // 3. Handle the result from the server action
+        if (!result.success) {
+          setError(result.message || errorMessage);
+          return; // Stop if the server reported a controlled error
+        }
+
+        // 4. On success, notify the parent component
+        if (onCheckIn) {
+          onCheckIn();
+        }
+      } catch (e) {
+        // 5. Catch any unexpected errors (e.g., network failure)
+        console.error("Check-in/out failed:", e);
+        setError("An unexpected network error occurred.");
+      }
+    });
   };
 
   const handleDisabledClick = () => {
@@ -433,14 +457,14 @@ const ParkCard: FC<ParkCardProps> = ({
           )}
 
           <Button
-            onClick={isDisabled ? handleDisabledClick : handleCheckIn}
-            disabled={isPending}
+            onClick={isDisabled ? handleDisabledClick : handleToggleCheckIn}
+            disabled={isCheckInPending}
             className="w-full"
             variant={
               isCheckedIn ? "outline" : isDisabled ? "secondary" : "default"
             }
           >
-            {isPending
+            {isCheckInPending
               ? "Loading..."
               : isCheckedIn
               ? "Check Out"
@@ -448,6 +472,12 @@ const ParkCard: FC<ParkCardProps> = ({
               ? "Check in disabled"
               : "Check In"}
           </Button>
+
+          {error && (
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded border border-red-200 font-inter">
+              {error}
+            </div>
+          )}
         </CardContent>
       </Card>
     </TooltipProvider>

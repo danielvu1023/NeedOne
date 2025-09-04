@@ -129,7 +129,7 @@ export async function checkInUser(parkId: number): Promise<ApiResponse> {
 
     // Step 2: Call the PostgreSQL function via RPC
     // This is the core logic. We pass the parkId to our custom function.
-    const { error: rpcError } = await supabase.rpc("check_ins_user", {
+    const { error: rpcError } = await supabase.rpc("check_in_user", {
       park_id_to_check_in: parkId,
     });
 

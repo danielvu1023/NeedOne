@@ -7,12 +7,27 @@ import ParkCard from "../ui/park-card";
 export function MyParksList({ parks }) {
   const [checkedInParkId, setCheckedInParkId] = useState(null);
 
-  const handleCheckIn = (parkId) => {
+  const { data: parkUsersData, error: parkUsersError } = use(parks);
+  const userParks = parkUsersData || [];
+
+  // 2. useEffect to synchronize server state to local state
+  useEffect(() => {
+    // Make sure we have parks to check
+    if (userParks && userParks.length > 0) {
+      // Get the "Server Truth" from the first park.
+      // (Since it's the same value for every park in the list)
+      const serverCheckedInId = userParks[0]?.currently_checked_in_park_id;
+
+      // Update the local "Client Truth" to match the server.
+      setCheckedInParkId(serverCheckedInId);
+    }
+  }, [userParks]); // 3. Dependency array: This effect runs whenever userParks changes.
+
+  // This handler is for USER INTERACTIONS after the initial load. It's still needed.
+  const handleCheckInStateChange = (parkId) => {
     if (checkedInParkId === parkId) {
-      // Check out of current park
       setCheckedInParkId(null);
     } else {
-      // Check into new park (only if not checked in anywhere else)
       if (!checkedInParkId) {
         setCheckedInParkId(parkId);
       }
@@ -23,7 +38,6 @@ export function MyParksList({ parks }) {
     return <p>No parks found.</p>;
   }
 
-  const { data: parkUsersData, error: parkUsersError } = use(parks);
   if (parkUsersError) {
     return (
       <div className="border-l-4 border-destructive p-4 bg-destructive/10 rounded-md">
@@ -34,7 +48,6 @@ export function MyParksList({ parks }) {
       </div>
     );
   }
-  const userParks = parkUsersData || [];
   return (
     <div className="flex flex-col gap-4">
       {userParks.map((park) => {
@@ -44,7 +57,7 @@ export function MyParksList({ parks }) {
             key={park.id}
             park={park}
             isCheckedIn={checkedInParkId === park.id}
-            onCheckIn={() => handleCheckIn(park.id)}
+            onCheckIn={() => handleCheckInStateChange(park.id)}
             isDisabled={checkedInParkId !== null && checkedInParkId !== park.id}
             checkedInParkName={checkedInPark?.name}
           />
