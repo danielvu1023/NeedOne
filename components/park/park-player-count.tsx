@@ -76,7 +76,37 @@ const ParkPlayerCount = ({ park }: { park: Park }) => {
     loadInitialData();
     (async () => {
       await supabase.realtime.setAuth();
+      const { data, error } = await supabase.auth.getSession();
 
+      if (error || !data?.session?.user) {
+        console.error("Error getting user session:", error);
+        return;
+      }
+      const userId = data?.session.user.id;
+      const friendRequestChannelName = `friend_requests:${userId}`;
+      const friendRequestChannel = supabase.channel(friendRequestChannelName, {
+        config: { private: true },
+      });
+      friendRequestChannel
+        .on("broadcast", { event: "*" }, (payload) => {
+          console.log(
+            `Realtime friend request event for user ${userId}:`,
+            payload
+          );
+        })
+        .subscribe((status, err) => {
+          if (status === "SUBSCRIBED") {
+            console.log(
+              `Successfully subscribed to friend request channel: ${friendRequestChannelName}`
+            );
+          }
+          if (status === "CHANNEL_ERROR") {
+            console.error(
+              `Failed to subscribe to channel ${friendRequestChannelName}. Error:`,
+              err
+            );
+          }
+        });
       // --- CHANNEL 1: For Player Check-ins (existing code) ---
       const checkInChannelName = `parks:${parkId}`;
       const checkInChannel = supabase.channel(checkInChannelName, {

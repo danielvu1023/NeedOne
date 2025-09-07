@@ -26,19 +26,19 @@ export const formatTimeAgo = (date: string | Date): string => {
   }
 
   if (secondsAgo < 60) {
-    return `${secondsAgo} seconds ago`;
+    return `${secondsAgo} sec ago`;
   }
 
   const minutesAgo = Math.floor(secondsAgo / 60);
   if (minutesAgo < 60) {
-    return minutesAgo === 1 ? "1 minute ago" : `${minutesAgo} minutes ago`;
+    return `${minutesAgo} min ago`;
   }
 
   const hoursAgo = Math.floor(minutesAgo / 60);
   if (hoursAgo < 24) {
-    return hoursAgo === 1 ? "1 hour ago" : `${hoursAgo} hours ago`;
+    return `${hoursAgo} hr ago`;
   }
 
   const daysAgo = Math.floor(hoursAgo / 24);
-  return daysAgo === 1 ? "1 day ago" : `${daysAgo} days ago`;
+  return `${daysAgo} day${daysAgo === 1 ? "" : "s"} ago`;
 };

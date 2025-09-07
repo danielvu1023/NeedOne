@@ -20,9 +20,10 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { User, ArrowLeft, LogOut, Settings, Shield, MessageSquare, Star, X } from "lucide-react";
+import { User, ArrowLeft, LogOut, Settings, Shield, MessageSquare, Star, X, Users, Clock, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { signOut } from "@/app/login/actions";
+import { useFriendsPanel } from "@/contexts/friends-panel-context";
 
 export default function Navbar() {
   const router = useRouter();
@@ -31,6 +32,7 @@ export default function Navbar() {
   const [feedbackType, setFeedbackType] = useState("");
   const [feedbackText, setFeedbackText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toggleExpanded } = useFriendsPanel();
 
   const handleSubmitFeedback = () => {
     setIsSubmitting(true);
@@ -175,47 +177,16 @@ export default function Navbar() {
               </DialogContent>
             </Dialog>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="relative h-9 w-9 rounded-full"
-                >
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage src={"/placeholder.svg"} alt="" />
-                    <AvatarFallback>""</AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-
-              <DropdownMenuContent className="w-56" align="end">
-                <div className="flex items-center justify-start gap-2 p-2">
-                  <div className="flex flex-col space-y-1 leading-none">
-                    <p className="font-medium">Sam</p>
-                    <p className="text-xs text-muted-foreground">
-                      sam@example.com
-                    </p>
-                  </div>
-                </div>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem>
-                  <Settings className="h-4 w-4 mr-2" />
-                  App Settings
-                </DropdownMenuItem>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem
-                  onClick={signOut}
-                  className="text-destructive"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button
+              variant="ghost"
+              className="relative h-9 w-9 rounded-full"
+              onClick={toggleExpanded}
+            >
+              <Avatar className="h-9 w-9">
+                <AvatarImage src="https://lh3.googleusercontent.com/a/ACg8ocKLlooCBCB36dJ3-DqsVFm5sA962GL51QMGu2nRnIVZhw" alt="Daniel Vu" />
+                <AvatarFallback>DV</AvatarFallback>
+              </Avatar>
+            </Button>
           </div>
         </div>
       </div>

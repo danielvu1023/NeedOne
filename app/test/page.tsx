@@ -1,6 +1,6 @@
 // app/test/page.js
 "use client";
-import Navbar from "@/components/ui/navbar";
+import { AppLayout } from "@/components/layout/app-layout";
 import ParkCard from "@/components/ui/park-card";
 import { ParkCardSkeleton } from "@/components/ui/park-card-skeleton";
 import { Button } from "@/components/ui/button";
@@ -112,9 +112,8 @@ export default function TestPage() {
   };
 
   return (
-    <div className="min-w-80 max-w-[728px] mx-auto">
-      <Navbar />
-      <div className="pt-20 p-4 space-y-6">
+    <AppLayout>
+      <div className="min-w-80 max-w-[728px] mx-auto p-4 space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold mb-2">My Parks</h1>
@@ -168,6 +167,6 @@ export default function TestPage() {
           </div>
         </div>
       </div>
-    </div>
+    </AppLayout>
   );
 }

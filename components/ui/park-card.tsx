@@ -1,5 +1,12 @@
 "use client";
-import React, { FC, use, useEffect, useState, useTransition } from "react";
+import React, {
+  FC,
+  use,
+  useActionState,
+  useEffect,
+  useState,
+  useTransition,
+} from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +17,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -30,34 +44,328 @@ import {
   Timer,
   Wifi,
   WifiOff,
+  User,
+  UserPlus,
+  X,
 } from "lucide-react";
 import { formatTimeAgo } from "@/lib/utils";
-import { checkInUser, checkoutUser } from "@/app/parks/actions";
+import {
+  checkInUser,
+  checkoutUser,
+  deleteParkForUser,
+} from "@/app/parks/actions";
+import { submitReport } from "@/app/reports/actions";
+import { SubmitButton } from "./submit-button";
+import { toast } from "sonner";
+import { sendFriendRequest } from "@/app/friends/actions";
 
-// Custom time formatter for sec/min display
-const formatTimeAgoShort = (timestamp: string | null) => {
-  if (!timestamp) return "N/A";
-
-  const now = new Date();
-  const time = new Date(timestamp);
-  const diffInSeconds = Math.floor((now.getTime() - time.getTime()) / 1000);
-
-  if (diffInSeconds < 60) {
-    return `${diffInSeconds}s`;
-  } else if (diffInSeconds < 3600) {
-    const minutes = Math.floor(diffInSeconds / 60);
-    return `${minutes}m`;
-  } else if (diffInSeconds < 86400) {
-    const hours = Math.floor(diffInSeconds / 3600);
-    return `${hours}h`;
-  } else {
-    const days = Math.floor(diffInSeconds / 86400);
-    return `${days}d`;
+// Profile Row Component
+const ProfileRow = ({
+  currentCheckIns,
+}: {
+  currentCheckIns?: Array<{
+    fullname: string;
+    profile_pic: string | null;
+    user_id: string;
+    is_friend: boolean;
+    has_pending_request: boolean;
+  }>;
+}) => {
+  if (!currentCheckIns || currentCheckIns.length === 0) {
+    return null;
   }
+
+  const maxVisible = 5;
+
+  // Sort to show friends first
+  const sortedCheckIns = [...currentCheckIns].sort((a, b) => {
+    if (a.is_friend && !b.is_friend) return -1;
+    if (!a.is_friend && b.is_friend) return 1;
+    return 0;
+  });
+
+  const visibleUsers = sortedCheckIns.slice(0, maxVisible);
+  const remainingCount = sortedCheckIns.length - maxVisible;
+
+  return (
+    <div className="flex items-center gap-1 py-1">
+      {visibleUsers.map((user) => {
+        const initials = user.fullname
+          .split(" ")
+          .map((name) => name.charAt(0).toUpperCase())
+          .join("")
+          .slice(0, 2);
+
+        return (
+          <Tooltip key={user.user_id}>
+            <TooltipTrigger asChild>
+              <div className="relative">
+                {user.profile_pic ? (
+                  <img
+                    src={user.profile_pic}
+                    alt={user.fullname}
+                    className="w-7 h-7 rounded-full object-cover shadow-sm"
+                  />
+                ) : (
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-semibold shadow-sm">
+                    {initials}
+                  </div>
+                )}
+                {user.is_friend && (
+                  <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border border-white" />
+                )}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>
+                {user.fullname}
+                {user.is_friend ? " (Friend)" : ""}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        );
+      })}
+
+      {remainingCount > 0 && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="w-7 h-7 rounded-full bg-gray-100 border border-gray-300 border-dashed flex items-center justify-center text-gray-500 text-xs font-medium ml-1">
+              •••
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>
+              +{remainingCount} more user{remainingCount > 1 ? "s" : ""}
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      )}
+    </div>
+  );
+};
+
+// Add Friend Button Component with individual loading state
+const AddFriendButton = ({
+  userId,
+  hasPendingRequest,
+}: {
+  userId: string;
+  hasPendingRequest: boolean;
+}) => {
+  const [isPending, startTransition] = useTransition();
+
+  const handleAddFriend = () => {
+    if (hasPendingRequest) return;
+
+    startTransition(async () => {
+      try {
+        const result = await sendFriendRequest(userId);
+
+        if (!result.success) {
+          toast.error(
+            result.message || "Failed to add friend. Please try again."
+          );
+        } else {
+          toast.success(result.message || "Friend added successfully.");
+        }
+      } catch (e) {
+        console.error("Add friend failed:", e);
+        toast.error(
+          "A network error occurred while adding friend. Please try again."
+        );
+      }
+    });
+  };
+
+  if (hasPendingRequest) {
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        disabled
+        className="flex items-center gap-1"
+      >
+        <Clock className="h-3 w-3" />
+        Pending
+      </Button>
+    );
+  }
+
+  return (
+    <Button
+      size="sm"
+      onClick={handleAddFriend}
+      className="flex items-center gap-1"
+      disabled={isPending}
+    >
+      <UserPlus className="h-3 w-3" />
+      {isPending ? "Adding..." : "Add Friend"}
+    </Button>
+  );
+};
+
+// Player List Modal Component
+const PlayerListModal = ({
+  isOpen,
+  onClose,
+  currentCheckIns,
+  parkName,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  currentCheckIns?: Array<{
+    fullname: string;
+    profile_pic: string | null;
+    user_id: string;
+    is_friend: boolean;
+    has_pending_request: boolean;
+  }>;
+  parkName: string;
+}) => {
+  if (!currentCheckIns || currentCheckIns.length === 0) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              People at {parkName}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="h-6 w-6 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-center py-8 text-muted-foreground">
+            <Users className="h-8 w-8 mx-auto mb-2" />
+            <p>No one is currently checked in at this park.</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Sort to show friends first
+  const friends = currentCheckIns.filter((user) => user.is_friend);
+  const nonFriends = currentCheckIns.filter((user) => !user.is_friend);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader className="pt-4">
+          <DialogTitle className="text-lg text-center">
+            People at {parkName}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="max-h-96 overflow-y-auto space-y-3">
+          {/* Friends Section */}
+          {friends.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-px bg-border flex-1" />
+                <span className="text-xs text-muted-foreground px-2">
+                  Friends ({friends.length})
+                </span>
+                <div className="h-px bg-border flex-1" />
+              </div>
+              <div className="space-y-2">
+                {friends.map((user) => {
+                  const initials = user.fullname
+                    .split(" ")
+                    .map((name) => name.charAt(0).toUpperCase())
+                    .join("")
+                    .slice(0, 2);
+
+                  return (
+                    <div
+                      key={user.user_id}
+                      className="flex items-center justify-between p-2 rounded-lg border"
+                    >
+                      <div className="flex items-center gap-3">
+                        {user.profile_pic ? (
+                          <img
+                            src={user.profile_pic}
+                            alt={user.fullname}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
+                            {initials}
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-medium">{user.fullname}</p>
+                          <p className="text-xs text-green-600">Friend</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Other Players Section */}
+          {nonFriends.length > 0 && (
+            <div>
+              {friends.length > 0 && (
+                <div className="flex items-center gap-2 mb-3 mt-4">
+                  <div className="h-px bg-border flex-1" />
+                  <span className="text-xs text-muted-foreground px-2">
+                    Other Players ({nonFriends.length})
+                  </span>
+                  <div className="h-px bg-border flex-1" />
+                </div>
+              )}
+              <div className="space-y-2">
+                {nonFriends.map((user) => {
+                  const initials = user.fullname
+                    .split(" ")
+                    .map((name) => name.charAt(0).toUpperCase())
+                    .join("")
+                    .slice(0, 2);
+
+                  return (
+                    <div
+                      key={user.user_id}
+                      className="flex items-center justify-between p-2 rounded-lg border"
+                    >
+                      <div className="flex items-center gap-3">
+                        {user.profile_pic ? (
+                          <img
+                            src={user.profile_pic}
+                            alt={user.fullname}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
+                            {initials}
+                          </div>
+                        )}
+                        <p className="font-medium">{user.fullname}</p>
+                      </div>
+                      <AddFriendButton
+                        userId={user.user_id}
+                        hasPendingRequest={user.has_pending_request}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 };
 
 interface ParkCardProps {
-  park?: {
+  park: {
     id: number;
     name: string;
     location: string;
@@ -68,6 +376,13 @@ interface ParkCardProps {
     reportedPlayers?: number;
     hasModeratorReport?: boolean;
     lastReportTime?: string;
+    current_check_ins?: Array<{
+      fullname: string;
+      profile_pic: string | null;
+      user_id: string;
+      is_friend: boolean;
+      has_pending_request: boolean;
+    }>;
     tags?: {
       courts: number;
       net: "permanent" | "bring-own";
@@ -80,7 +395,10 @@ interface ParkCardProps {
   isDisabled?: boolean;
   checkedInParkName?: string;
 }
-
+const submitReportInitialState = {
+  success: false,
+  message: "",
+};
 const ParkCard: FC<ParkCardProps> = ({
   park,
   isCheckedIn = false,
@@ -91,37 +409,110 @@ const ParkCard: FC<ParkCardProps> = ({
   const [isPending, setIsPending] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [showModeratorInput, setShowModeratorInput] = useState(false);
-  const [moderatorCount, setModeratorCount] = useState(
-    park.latest_report_count || 0
-  );
+  const [showPlayerList, setShowPlayerList] = useState(false);
+
+  const moderatorCount = park.latest_report_count || 0;
   const [isCheckInPending, startCheckInTransition] = useTransition();
-  const [isCheckoutPending, startCheckoutTransition] = useTransition();
+  const [isRemovingPark, startRemovingParkTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const checkInCount = park.active_check_in_count;
   const courtCapacity = park.courts * 4;
+
+  // Mock data for testing profile row with 7 users (more than 5)
+  const mockCurrentCheckIns = park.current_check_ins || [
+    {
+      fullname: "John Doe",
+      profile_pic:
+        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+      user_id: "1",
+      is_friend: true,
+      has_pending_request: false,
+    },
+    {
+      fullname: "Jane Smith",
+      profile_pic: null,
+      user_id: "2",
+      is_friend: false,
+      has_pending_request: true,
+    },
+    {
+      fullname: "Mike Johnson",
+      profile_pic:
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+      user_id: "3",
+      is_friend: true,
+      has_pending_request: false,
+    },
+    {
+      fullname: "Sarah Wilson",
+      profile_pic: null,
+      user_id: "4",
+      is_friend: false,
+      has_pending_request: false,
+    },
+    {
+      fullname: "David Brown",
+      profile_pic:
+        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face",
+      user_id: "5",
+      is_friend: false,
+      has_pending_request: false,
+    },
+    {
+      fullname: "Emma Davis",
+      profile_pic: null,
+      user_id: "6",
+      is_friend: true,
+      has_pending_request: false,
+    },
+    {
+      fullname: "Alex Chen",
+      profile_pic:
+        "https://images.unsplash.com/photo-1494790108755-2616b612b1e0?w=150&h=150&fit=crop&crop=face",
+      user_id: "7",
+      is_friend: false,
+      has_pending_request: true,
+    },
+  ];
 
   // Determine if park is online based on activity
   const isOnline =
     checkInCount > 0 ||
     (park.latest_report_count && park.latest_report_count > 0);
-  // Mock data if no park prop provided
-  const mockPark = park || {
-    id: 1,
-    name: "Central Basketball Court",
-    location: "Downtown Park, Main Street",
-    isActive: true,
-    currentPlayers: 8,
-    maxPlayers: 10,
-    lastActivity: "2 mins ago",
-    reportedPlayers: 9,
-    hasModeratorReport: true,
-    lastReportTime: "1 min ago",
-    tags: {
-      courts: 4,
-      net: "permanent",
-      environment: "outdoor",
-      access: "public",
-    },
+  const submitReportWithParkId = submitReport.bind(null, park.id);
+  const [submitReportState, submitReportFormAction, submitReportPending] =
+    useActionState(submitReportWithParkId, submitReportInitialState);
+  console.log("submitReportState", submitReportState);
+  useEffect(() => {
+    if (submitReportState.message) {
+      if (submitReportState.success) {
+        console.log("it ran");
+        toast.success(submitReportState.message);
+      } else {
+        toast.error(submitReportState.message);
+      }
+    }
+  }, [submitReportState]);
+  const handleRemovePark = () => {
+    startRemovingParkTransition(async () => {
+      try {
+        const result = await deleteParkForUser(park.id);
+
+        if (!result.success) {
+          toast.error(
+            result.message || "Failed to remove park. Please try again."
+          );
+          return;
+        } else {
+          toast.success(result.message || "Park removed from your list.");
+        }
+      } catch (e) {
+        console.error("Remove park failed:", e);
+        setError(
+          "A network error occurred while removing the park. Please try again."
+        );
+      }
+    });
   };
 
   const handleToggleCheckIn = () => {
@@ -162,19 +553,10 @@ const ParkCard: FC<ParkCardProps> = ({
     }
   };
 
-  const handleRemovePark = () => {
-    setIsRemoving(true);
-    setTimeout(() => {
-      alert(`Park "${park.name}" removed from your list!`);
-      setIsRemoving(false);
-    }, 1000);
-  };
-
   const handleModeratorUpdate = () => {
     if (moderatorCount) {
       alert(`Player count updated to ${moderatorCount} by moderator`);
       setShowModeratorInput(false);
-      setModeratorCount("");
     }
   };
 
@@ -220,6 +602,12 @@ const ParkCard: FC<ParkCardProps> = ({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
+                    onClick={() => setShowPlayerList(true)}
+                    className="focus:bg-blue-50"
+                  >
+                    View people at park
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
                     onClick={() => setShowModeratorInput(!showModeratorInput)}
                     className="focus:bg-blue-50"
                   >
@@ -229,7 +617,7 @@ const ParkCard: FC<ParkCardProps> = ({
                     onClick={handleRemovePark}
                     className="text-destructive focus:text-destructive"
                   >
-                    {isRemoving ? "Removing..." : "Remove from list"}
+                    {isRemovingPark ? "Removing..." : "Remove from list"}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -305,10 +693,13 @@ const ParkCard: FC<ParkCardProps> = ({
             <div className="flex items-center text-muted-foreground font-inter">
               <Clock className="h-4 w-4 mr-1" />
               <span className="time-display text-xs">
-                {formatTimeAgoShort(park.latest_check_in_time)} ago
+                {formatTimeAgo(park.latest_check_in_time)}
               </span>
             </div>
           </div>
+
+          {/* Profile Row - Current Check-ins */}
+          <ProfileRow currentCheckIns={mockCurrentCheckIns} />
 
           {/* Queue display when over capacity */}
           {checkInCount > courtCapacity && (
@@ -385,7 +776,7 @@ const ParkCard: FC<ParkCardProps> = ({
             <div className="flex items-center text-muted-foreground font-inter">
               <Clock className="h-4 w-4 mr-1" />
               <span className="time-display text-xs">
-                {formatTimeAgoShort(park.latest_report_created_at)} ago
+                {formatTimeAgo(park.latest_report_created_at)}
               </span>
             </div>
           </div>
@@ -437,22 +828,20 @@ const ParkCard: FC<ParkCardProps> = ({
                   Moderator Update
                 </span>
               </div>
-              <div className="flex gap-2">
+              <form className="flex gap-2" action={submitReportFormAction}>
                 <Input
                   type="number"
                   placeholder="Player count"
-                  value={moderatorCount}
-                  onChange={(e) => setModeratorCount(e.target.value)}
                   className="flex-1"
+                  name="moderatorCount"
                 />
                 <Button
-                  onClick={handleModeratorUpdate}
-                  size="sm"
-                  disabled={!moderatorCount}
+                  type="submit"
+                  disabled={submitReportPending || !moderatorCount}
                 >
-                  Update
+                  {submitReportPending ? "Updating..." : "Update"}
                 </Button>
-              </div>
+              </form>
             </div>
           )}
 
@@ -478,6 +867,14 @@ const ParkCard: FC<ParkCardProps> = ({
               {error}
             </div>
           )}
+
+          {/* Player List Modal */}
+          <PlayerListModal
+            isOpen={showPlayerList}
+            onClose={() => setShowPlayerList(false)}
+            currentCheckIns={mockCurrentCheckIns}
+            parkName={park.name}
+          />
         </CardContent>
       </Card>
     </TooltipProvider>

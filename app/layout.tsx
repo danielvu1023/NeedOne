@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Script from "next/script";
+import ToasterClient from "@/components/ui/toaster-client";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -43,6 +44,7 @@ export default function RootLayout({
         className={`${poppins.variable} ${inter.variable} ${jetbrainsMono.variable} font-inter antialiased`}
       >
         {children}
+        <ToasterClient />
       </body>
       <Script src="https://accounts.google.com/gsi/client" async />
     </html>

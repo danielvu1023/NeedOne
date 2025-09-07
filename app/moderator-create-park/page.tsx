@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import Navbar from "@/components/ui/navbar";
+import { AppLayout } from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,9 +55,8 @@ export default function ModeratorCreateParkPage() {
   };
 
   return (
-    <div className="min-w-80 max-w-[728px] mx-auto">
-      <Navbar />
-      <div className="pt-20 p-4 space-y-6">
+    <AppLayout>
+      <div className="min-w-80 max-w-[728px] mx-auto p-4 space-y-6">
         <div>
           <Button
             variant="ghost"
@@ -276,6 +275,6 @@ export default function ModeratorCreateParkPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </AppLayout>
   );
 }

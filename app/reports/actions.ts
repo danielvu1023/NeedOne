@@ -3,7 +3,12 @@ import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-export async function submitReport(parkId: number, count: number) {
+// TODO: Better convention then having to pass previousState without using it?
+export async function submitReport(
+  parkId: number,
+  previousState: any,
+  formData: any
+) {
   try {
     const supabase = await createClient();
     const {
@@ -16,7 +21,7 @@ export async function submitReport(parkId: number, count: number) {
     }
     const { error } = await supabase.from("reports").insert({
       park_id: parkId,
-      report_count: count,
+      report_count: formData.get("moderatorCount"),
       user_id: user.id,
     });
     if (error) {

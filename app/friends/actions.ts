@@ -61,114 +61,184 @@ export async function getFriendsList() {
 export async function sendFriendRequest(
   receiverId: string
 ): Promise<ApiResponse> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
 
-  if (userError || !user) {
-    redirect("/login");
-  }
+    if (userError || !user) {
+      redirect("/login");
+    }
 
-  // 1. Prevent self-requests
-  if (user.id === receiverId) {
-    return {
-      success: false,
-      message: "You cannot send a friend request to yourself.",
-    };
-  }
+    // 1. Prevent self-requests
+    if (user.id === receiverId) {
+      return {
+        success: false,
+        message: "You cannot send a friend request to yourself.",
+      };
+    }
 
-  // 2. Check if already friends (this check remains crucial)
-  const [user_id_1, user_id_2] = [user.id, receiverId].sort();
-  const { data: friendship } = await supabase
-    .from("friendships")
-    .select("user_id_1")
-    .match({ user_id_1, user_id_2 })
-    .maybeSingle();
+    // 2. Check if already friends (this check remains crucial)
+    const [user_id_1, user_id_2] = [user.id, receiverId].sort();
+    const { data: friendship } = await supabase
+      .from("friendships")
+      .select("user_id_1")
+      .match({ user_id_1, user_id_2 })
+      .maybeSingle();
 
-  if (friendship) {
-    return {
-      success: false,
-      message: "You are already friends with this user.",
-    };
-  }
+    if (friendship) {
+      return {
+        success: false,
+        message: "You are already friends with this user.",
+      };
+    }
 
-  // 3. Find the MOST RECENT request between these two users to check its status.
-  const { data: latestRequest, error: requestError } = await supabase
-    .from("friend_requests")
-    .select("status")
-    .or(
-      `and(sender_id.eq.${user.id},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${user.id})`
-    )
-    .order("created_at", { ascending: false }) // Order by most recent
-    .limit(1) // Get only the latest one
-    .maybeSingle();
+    // 3. Find the MOST RECENT request between these two users to check its status.
+    const { data: latestRequest, error: requestError } = await supabase
+      .from("friend_requests")
+      .select("status")
+      .or(
+        `and(sender_id.eq.${user.id},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${user.id})`
+      )
+      .order("created_at", { ascending: false }) // Order by most recent
+      .limit(1) // Get only the latest one
+      .maybeSingle();
 
-  if (requestError) {
-    console.error("Error checking latest request:", requestError);
-    return { success: false, message: "A database error occurred." };
-  }
+    if (requestError) {
+      console.error("Error checking latest request:", requestError);
+      return { success: false, message: "A database error occurred." };
+    }
 
-  // 4. If a latest request exists, check its status.
-  if (latestRequest) {
-    // If the latest interaction is still pending, don't allow a new one.
-    if (latestRequest.status === "pending") {
+    if (latestRequest?.status === "pending") {
       return {
         success: false,
         message:
           "A friend request is already pending between you and this user.",
       };
     }
-    // If the latest was accepted, they are friends. Redundant due to the friendship check, but good for consistency.
-    if (latestRequest.status === "accepted") {
-      return { success: false, message: "You are already friends." };
+
+    const { error: insertError } = await supabase
+      .from("friend_requests")
+      .insert({ sender_id: user.id, receiver_id: receiverId });
+
+    if (insertError) {
+      console.error("Error inserting new friend request:", insertError);
+      return {
+        success: false,
+        message: "Could not send friend request. Please try again.",
+      };
     }
-    // If the latest was 'declined', the logic proceeds to the INSERT step, which is exactly what we want.
-  }
 
-  // 5. If no request exists, OR the latest one was declined, we are clear to insert a new request.
-  const { error: insertError } = await supabase
-    .from("friend_requests")
-    .insert({ sender_id: user.id, receiver_id: receiverId });
-
-  if (insertError) {
-    console.error("Error inserting new friend request:", insertError);
+    revalidatePath("/");
+    return { success: true, message: "Friend request sent!" };
+  } catch (error) {
+    console.error("Unexpected error in sendFriendRequest:", error);
     return {
       success: false,
-      message: "Could not send friend request. Please try again.",
+      message: "An unexpected error occurred. Please try again.",
     };
   }
-
-  revalidatePath("/friends");
-  return { success: true, message: "Friend request sent!" };
 }
-export async function getFriendRequests() {
-  const supabase = await createClient();
+export async function getFriendsWithStatus(): Promise<ApiDataResponse<any[]>> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+    if (userError || !user) {
+      redirect("/login");
+    }
 
-  if (userError || !user) {
-    redirect("/login");
-  }
-  // Query friend_requests where current user is receiver and status is 'pending'
-  const { data: requests, error } = await supabase
-    .from("friend_requests")
-    .select("id, sender_id, receiver_id, status, sender:sender_id(id, name)")
-    .eq("receiver_id", user.id)
-    .eq("status", "pending");
+    const { data: friends, error } = await supabase.rpc(
+      "get_friends_with_status",
+      {
+        p_user_id: user.id,
+      }
+    );
 
-  if (error) {
+    if (error) {
+      console.error("Error fetching friends with status:", error);
+      return {
+        data: null,
+        message: "Could not retrieve friends with status.",
+        success: false,
+        error: error.message,
+      };
+    }
+
+    return {
+      data: friends || [],
+      message: null,
+      success: true,
+    };
+  } catch (error) {
+    console.error("Unexpected error in getFriendsWithStatus:", error);
     return {
       data: null,
-      message: "Could not retrieve friend requests.",
+      message: "An unexpected error occurred.",
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+export async function getPendingFriendRequests() {
+  try {
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      redirect("/login");
+    }
+
+    const { data: requests, error } = await supabase
+      .from("friend_requests")
+      .select(
+        `
+        id,
+        sender_id,
+        created_at,
+        status,
+        profiles!sender_id (
+          id,
+          name,
+          image_url
+        )
+      `
+      )
+      .eq("receiver_id", user.id)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      return {
+        data: null,
+        message: "Could not retrieve friend requests.",
+        success: false,
+      };
+    }
+
+    return {
+      data: requests || [],
+      message: null,
+      success: true,
+    };
+  } catch (error) {
+    console.error("Unexpected error in getPendingFriendRequests:", error);
+    return {
+      data: null,
+      message: "An unexpected error occurred.",
       success: false,
     };
   }
-  return { data: requests, message: null, success: true };
 }
 
 export async function acceptFriendRequest(senderId: string) {

@@ -1,5 +1,5 @@
 // app/add-park-test/page.tsx
-import Navbar from "@/components/ui/navbar";
+import { AppLayout } from "@/components/layout/app-layout";
 import AddParkCard from "@/components/ui/add-park-card";
 import { AddParkCardSkeleton } from "@/components/ui/add-park-card-skeleton";
 import { ArrowLeft } from "lucide-react";
@@ -53,9 +53,8 @@ export default async function AddParkTestPage() {
     );
   }
   return (
-    <div className="min-w-80 max-w-[728px] mx-auto">
-      <Navbar />
-      <div className="pt-20 p-4 space-y-6">
+    <AppLayout>
+      <div className="min-w-80 max-w-[728px] mx-auto p-4 space-y-6">
         <div>
           <Link
             href="/my-parks"
@@ -76,6 +75,6 @@ export default async function AddParkTestPage() {
           ))}
         </div>
       </div>
-    </div>
+    </AppLayout>
   );
 }
