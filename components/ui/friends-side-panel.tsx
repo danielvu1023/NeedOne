@@ -99,13 +99,12 @@ export function FriendsSidePanel({
       config: { private: true },
     });
     userFriendsChannel
-      .on("broadcast", { event: "*" }, async (payload) => {
+      .on("broadcast", { event: "INSERT" }, async (payload) => {
         console.log(
           `[${new Date().toISOString()}] Realtime user friends event for user ${userId}:`,
           payload
         );
 
-        // Refetch friends data to ensure consistency
         try {
           const friendsResult = await getFriendsWithStatus();
           if (friendsResult.success) {

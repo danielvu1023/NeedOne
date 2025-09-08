@@ -3,6 +3,7 @@ import { Poppins, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Script from "next/script";
 import ToasterClient from "@/components/ui/toaster-client";
+import { PushNotificationProvider } from "@/components/PushNotificationProvider";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -43,7 +44,9 @@ export default function RootLayout({
       <body
         className={`${poppins.variable} ${inter.variable} ${jetbrainsMono.variable} font-inter antialiased`}
       >
-        {children}
+        <PushNotificationProvider>
+          {children}
+        </PushNotificationProvider>
         <ToasterClient />
       </body>
       <Script src="https://accounts.google.com/gsi/client" async />

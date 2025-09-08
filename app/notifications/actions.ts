@@ -92,16 +92,23 @@ export async function unsubscribeUser(endpoint: string) {
 export async function sendNotification(message: string, userId: string) {
   try {
     const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: "User not authenticated" };
+    }
 
     const { data: subscription, error } = await supabase
       .from("push_subscriptions")
       .select("*")
-      .eq("user_id", userId)
+      .eq("user_id", user.id)
       .eq("status", "active")
       .single();
 
     if (error || !subscription) {
-      console.error("No active subscription found for user:", userId);
       return { success: false, error: "No active subscription found" };
     }
 
