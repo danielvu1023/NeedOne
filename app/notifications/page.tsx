@@ -41,6 +41,7 @@ function PushNotificationManager() {
 
   async function subscribeToPush() {
     const registration = await navigator.serviceWorker.ready;
+
     const sub = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(
@@ -53,14 +54,20 @@ function PushNotificationManager() {
   }
 
   async function unsubscribeFromPush() {
-    await subscription?.unsubscribe();
+    // TODO: Client side error message?
+    if (!subscription?.endpoint) {
+      return;
+    }
+    const endpoint = subscription.endpoint;
+    await subscription.unsubscribe();
     setSubscription(null);
-    await unsubscribeUser();
+    await unsubscribeUser(endpoint);
   }
 
   async function sendTestNotification() {
     if (subscription) {
-      await sendNotification(message);
+      const serializedSub = JSON.parse(JSON.stringify(subscription));
+      await sendNotification(message, serializedSub);
       setMessage("");
     }
   }
