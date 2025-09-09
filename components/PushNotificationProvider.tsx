@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { PushNotificationModal } from "./PushNotificationModal";
 
 interface PushNotificationProviderProps {
@@ -12,9 +13,9 @@ export function PushNotificationProvider({
 }: PushNotificationProviderProps) {
   const [showModal, setShowModal] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
-    debugger;
     setIsClient(true);
 
     const checkShouldShowModal = async () => {
@@ -57,7 +58,9 @@ export function PushNotificationProvider({
   return (
     <>
       {children}
-      <PushNotificationModal isOpen={showModal} onOpenChange={setShowModal} />
+      {pathname !== "/login" && (
+        <PushNotificationModal isOpen={showModal} onOpenChange={setShowModal} />
+      )}
     </>
   );
 }
