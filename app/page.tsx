@@ -2,7 +2,7 @@
 import { AppLayout } from "@/components/layout/app-layout";
 import ParkCard from "@/components/ui/park-card";
 import { ParkCardSkeleton } from "@/components/ui/park-card-skeleton";
-import { Button, buttonVariants } from "@/components/ui/button";
+// import { Button, buttonVariants } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Suspense } from "react";
 import Link from "next/link";
@@ -108,7 +108,7 @@ export default async function Page() {
             </p>
           </div>
           <div className="flex flex-col gap-2">
-            <Link
+            {/* <Link
               href="/parks"
               className={buttonVariants({
                 className: "flex items-center gap-2",
@@ -123,10 +123,9 @@ export default async function Page() {
                 variant: "outline",
                 className: "flex items-center gap-2",
               })}
-            >
               <Plus className="h-4 w-4" />
               Create Park
-            </Link>
+            </Link> */}
           </div>
         </div>
         <Suspense fallback={<ParkCardSkeleton />}>
