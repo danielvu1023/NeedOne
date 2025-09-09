@@ -2,7 +2,7 @@
 
 import { useParks, type Park } from "@/components/parks/parks-provider";
 import { useAuth } from "@/components/auth/auth-provider";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
