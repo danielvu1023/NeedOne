@@ -2,7 +2,7 @@
 import { AppLayout } from "@/components/layout/app-layout";
 import ParkCard from "@/components/ui/park-card";
 import { ParkCardSkeleton } from "@/components/ui/park-card-skeleton";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "../components/ui/button";
 import { Plus } from "lucide-react";
 import { Suspense } from "react";
 import Link from "next/link";
