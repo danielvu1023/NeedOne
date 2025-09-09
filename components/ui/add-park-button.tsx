@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/buttons";
 import { Plus, CheckCircle } from "lucide-react";
 import { addParkForUser } from "@/app/parks/actions";
 
