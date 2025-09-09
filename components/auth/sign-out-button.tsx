@@ -4,7 +4,7 @@
 
 import { redirect, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client"; // Your client-side Supabase instance
-import { Button } from "@/components/ui/buttons";
+import { Button } from "@/components/ui/button";
 import { useState, useTransition } from "react";
 import { signOut } from "@/app/login/actions";
 
