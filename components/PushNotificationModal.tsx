@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-// import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Bell, BellOff } from "lucide-react";
 import { subscribeUser } from "@/app/notifications/actions";
 
