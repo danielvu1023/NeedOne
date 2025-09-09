@@ -55,7 +55,6 @@ import {
   deleteParkForUser,
 } from "@/app/parks/actions";
 import { submitReport } from "@/app/reports/actions";
-import { SubmitButton } from "./submit-button";
 import { toast } from "sonner";
 import { sendFriendRequest } from "@/app/friends/actions";
 
@@ -550,13 +549,6 @@ const ParkCard: FC<ParkCardProps> = ({
       alert(
         `You must check out of "${checkedInParkName}" before you can check into another park.`
       );
-    }
-  };
-
-  const handleModeratorUpdate = () => {
-    if (moderatorCount) {
-      alert(`Player count updated to ${moderatorCount} by moderator`);
-      setShowModeratorInput(false);
     }
   };
 

@@ -9,7 +9,7 @@ import { createClient } from "@/utils/supabase/server";
 import InfoMessage from "@/components/ui/info-message";
 import Link from "next/link";
 
-export default async function AddParkTestPage() {
+export default async function AddParkPage() {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
   if (error || !data?.user) {

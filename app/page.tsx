@@ -85,7 +85,7 @@ const mockParks = [
   },
 ];
 
-export default async function TestPage() {
+export default async function Page() {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
   if (error || !data?.user) {

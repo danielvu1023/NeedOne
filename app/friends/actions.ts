@@ -3,61 +3,7 @@ import { ApiDataResponse, ApiResponse } from "@/lib/types";
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-export async function getFriendsList() {
-  // 1. Get the current authenticated user's session
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
 
-  if (userError || !user) {
-    redirect("/login");
-  }
-  const { data: friends, error: friendsError } = await supabase
-    .from("friendships")
-    .select("profiles:user_id_2(id, name)")
-    .eq("user_id_1", user.id);
-
-  // 2. We need two queries because the user can be in either column.
-  //   //    Promise.all runs both queries concurrently for better performance.
-  //   const [friendsOne, friendsTwo] = await Promise.all([
-  //     // Query 1: Find friends where the current user is user_id_1
-  //     // and fetch the profile of the user in user_id_2
-  //     supabase
-  //       .from("friendships")
-  //       .select("profiles:user_id_2(id, username)") // This joins with the profiles table
-  //       .eq("user_id_1", user.id),
-
-  //     // Query 2: Find friends where the current user is user_id_2
-  //     // and fetch the profile of the user in user_id_1
-  //     supabase
-  //       .from("friendships")
-  //       .select("profiles:user_id_1(id, username)")
-  //       .eq("user_id_2", user.id),
-  //   ]);
-
-  //   // Check for errors in either query
-  //   if (friendsOne.error || friendsTwo.error) {
-  //     console.error(
-  //       "Error fetching friends:",
-  //       friendsOne.error || friendsTwo.error
-  //     );
-  //     return { friends: null, error: "Could not retrieve friends list." };
-  //   }
-
-  //   // 3. The results are nested, so we need to combine and clean them up.
-  //   //    - friendsOne.data might look like: [{ profiles: {id, username} }, ...]
-  //   //    - friendsTwo.data might look like: [{ profiles: {id, username} }, ...]
-
-  //   const combinedFriends = [
-  //     ...friendsOne.data.map((item) => item.profiles),
-  //     ...friendsTwo.data.map((item) => item.profiles),
-  //   ];
-
-  return { friends, error: null };
-}
-// TODO: Need to test
 export async function sendFriendRequest(
   receiverId: string
 ): Promise<ApiResponse> {
