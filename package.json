@@ -55,6 +55,7 @@
     "@types/web-push": "^3.6.4",
     "eslint": "^9",
     "eslint-config-next": "15.4.3",
+    "postgres": "^3.4.7",
     "prisma": "^6.12.0",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
