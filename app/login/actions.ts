@@ -2,23 +2,26 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-
 import { createClient } from "@/utils/supabase/server";
 
 export async function login(formData: FormData) {
   const supabase = await createClient();
 
-  // type-casting here for convenience
-  // in practice, you should validate your inputs
-  const data = {
-    email: formData.get("email") as string,
-    password: formData.get("password") as string,
-  };
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
 
-  const { error } = await supabase.auth.signInWithPassword(data);
+  if (!email || !password) {
+    redirect("/login?error=missing-fields");
+  }
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
 
   if (error) {
-    redirect("/error");
+    console.error("Login error:", error);
+    redirect(`/login?error=${encodeURIComponent(error.message)}`);
   }
 
   revalidatePath("/", "layout");
@@ -28,17 +31,33 @@ export async function login(formData: FormData) {
 export async function signUp(formData: FormData) {
   const supabase = await createClient();
 
-  // type-casting here for convenience
-  // in practice, you should validate your inputs
-  const data = {
-    email: formData.get("email") as string,
-    password: formData.get("password") as string,
-  };
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
 
-  const { error } = await supabase.auth.signUp(data);
+  if (!email || !password) {
+    redirect("/login?error=missing-fields");
+  }
+
+  if (password.length < 6) {
+    redirect("/login?error=password-too-short");
+  }
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+    },
+  });
 
   if (error) {
-    redirect("/error");
+    console.error("Sign up error:", error);
+    redirect(`/login?error=${encodeURIComponent(error.message)}`);
+  }
+
+  // Check if email confirmation is required
+  if (data.user && !data.session) {
+    redirect("/login?message=check-email");
   }
 
   revalidatePath("/", "layout");
