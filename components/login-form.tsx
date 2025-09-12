@@ -102,6 +102,22 @@ export function LoginForm({
               )}
 
               <form action={handleSubmit} className="space-y-4">
+                {isSignUp && (
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName" className="text-sm font-medium">
+                      Full Name
+                    </Label>
+                    <Input
+                      id="fullName"
+                      name="fullName"
+                      type="text"
+                      placeholder="Enter your full name"
+                      required
+                      className="w-full"
+                    />
+                  </div>
+                )}
+                
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-sm font-medium">
                     Email

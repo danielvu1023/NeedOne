@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 export async function addParkForUser(parkId: string): Promise<ApiResponse> {
   try {
-    debugger;
     const supabase = await createClient();
     const { data, error: userError } = await supabase.auth.getUser();
 
@@ -84,7 +83,7 @@ export async function checkoutUser(parkId: number): Promise<ApiResponse> {
     }
 
     const userId = data.user.id;
-    const { error: checkoutError } = await supabase
+    const { data: checkoutData, error: checkoutError } = await supabase
       .from("check_ins")
       // 1. Specify the data to update.
       .update({
@@ -96,7 +95,8 @@ export async function checkoutUser(parkId: number): Promise<ApiResponse> {
         park_id: parkId,
       })
       // 3. Add the crucial condition to only target active check-ins.
-      .is("check_out_time", null);
+      .is("check_out_time", null)
+      .select(); // Add select to ensure we get the updated data back
 
     if (checkoutError) {
       return {
@@ -104,6 +104,15 @@ export async function checkoutUser(parkId: number): Promise<ApiResponse> {
         message: "Failed to checkout from park. Please try again later.",
       };
     }
+
+    if (!checkoutData || checkoutData.length === 0) {
+      return {
+        success: false,
+        message: "No active check-in found to check out from.",
+      };
+    }
+
+
     revalidatePath("/");
     return { success: true, message: "Successfully checked out from park!" };
   } catch (err) {

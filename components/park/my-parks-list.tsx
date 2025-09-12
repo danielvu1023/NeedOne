@@ -9,7 +9,6 @@ export function MyParksList({ parks }) {
 
   const { data: parkUsersData, error: parkUsersError } = use(parks);
   const userParks = parkUsersData || [];
-
   // 2. useEffect to synchronize server state to local state
   useEffect(() => {
     // Make sure we have parks to check

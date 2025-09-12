@@ -33,8 +33,9 @@ export async function signUp(formData: FormData) {
 
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
+  const fullName = formData.get("fullName") as string;
 
-  if (!email || !password) {
+  if (!email || !password || !fullName) {
     redirect("/login?error=missing-fields");
   }
 
@@ -47,6 +48,9 @@ export async function signUp(formData: FormData) {
     password,
     options: {
       emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      data: {
+        full_name: fullName,
+      },
     },
   });
 
