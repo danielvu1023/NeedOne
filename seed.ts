@@ -31,6 +31,16 @@ const main = async () => {
       password: "password123",
       full_name: "Susan Smith",
     },
+    {
+      email: "mike.wilson@example.com",
+      password: "password123",
+      full_name: "Mike Wilson",
+    },
+    {
+      email: "emily.brown@example.com",
+      password: "password123",
+      full_name: "Emily Brown",
+    },
   ];
   const userIds: string[] = [];
   for (const user of usersToCreate) {
@@ -47,10 +57,12 @@ const main = async () => {
       userIds.push(data.user.id);
     }
   }
-  const mainUser = userIds[0];
-  const user2 = userIds[1];
-  const user3 = userIds[2];
-  const user4 = userIds[3];
+  const mainUser = userIds[0]; // John Doe (main test user)
+  const user2 = userIds[1]; // Jane Doe
+  const user3 = userIds[2]; // Peter Jones
+  const user4 = userIds[3]; // Susan Smith
+  const user5 = userIds[4]; // Mike Wilson
+  const user6 = userIds[5]; // Emily Brown
 
   const netOptions = ["permanent", "temporary", "none"];
   const accessOptions = ["public", "private", "members-only"];
@@ -77,51 +89,88 @@ const main = async () => {
   const parkIds = parks.map((park) => park.id);
   const mainParkId = parkIds[0];
 
+  // Add coordinates to the main park
+
+  // if (coordError) {
+  //   console.error('Error adding coordinates to main park:', coordError);
+  // }
+
   await seed.park_users((x) =>
-    x(4, (i) => ({
+    x(6, (i) => ({
       user_id: userIds[i.index],
       park_id: mainParkId,
     }))
   );
 
-  await seed.friendships((x) => x(2, (i) => {
-    const friendId = i.index === 0 ? user2 : user3;
-    const [user_id_1, user_id_2] = mainUser < friendId ? [mainUser, friendId] : [friendId, mainUser];
-    
-    return {
-      user_id_1,
-      user_id_2,
-    };
-  }));
+  await seed.friendships((x) =>
+    x(2, (i) => {
+      const friendId = i.index === 0 ? user2 : user3;
+      const [user_id_1, user_id_2] =
+        mainUser < friendId ? [mainUser, friendId] : [friendId, mainUser];
 
-  await seed.friend_requests((x) => x(1, () => ({
-    sender_id: user4,
-    receiver_id: mainUser,
-    status: "pending"
-  })));
+      return {
+        user_id_1,
+        user_id_2,
+      };
+    })
+  );
 
-  await seed.check_ins((x) => x(2, (i) => ({
-    user_id: i.index === 0 ? user2 : user4,
-    park_id: mainParkId,
-    check_in_time: new Date(),
-    check_out_time: null
-  })));
+  // Create multiple friend requests - all going TO the main user
+  // Note: user2 and user3 are already friends with mainUser, so only user4, user5, user6 send requests
+  await seed.friend_requests((x) =>
+    x(3, (i) => {
+      if (i.index === 0) {
+        return {
+          sender_id: user4, // Susan Smith
+          receiver_id: mainUser,
+          status: "pending",
+        };
+      } else if (i.index === 1) {
+        return {
+          sender_id: user5, // Mike Wilson
+          receiver_id: mainUser,
+          status: "pending",
+        };
+      } else {
+        return {
+          sender_id: user6, // Emily Brown
+          receiver_id: mainUser,
+          status: "pending",
+        };
+      }
+    })
+  );
 
-  await seed.reports((x) => x(1, () => ({
-    park_id: mainParkId,
-    user_id: mainUser,
-    report_count: 8
-  })));
+  await seed.check_ins((x) =>
+    x(2, (i) => ({
+      user_id: i.index === 0 ? user2 : user4,
+      park_id: mainParkId,
+      check_in_time: new Date(),
+      check_out_time: null,
+    }))
+  );
 
-  await seed.role_permissions((x) => x(1, () => ({
-    role: "moderator",
-    permission: "reports.insert"
-  })));
+  await seed.reports((x) =>
+    x(1, () => ({
+      park_id: mainParkId,
+      user_id: mainUser,
+      report_count: 8,
+    }))
+  );
 
-  await seed.user_roles((x) => x(1, () => ({
-    user_id: mainUser,
-    role: "moderator"
-  })));
+  await seed.role_permissions((x) =>
+    x(1, () => ({
+      role: "moderator",
+      permission: "reports.insert",
+    }))
+  );
+
+  await seed.user_roles((x) =>
+    x(1, () => ({
+      user_id: mainUser,
+      role: "moderator",
+    }))
+  );
 
   process.exit(0);
 };
