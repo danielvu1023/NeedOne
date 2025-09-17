@@ -2,7 +2,6 @@ import { ReactNode } from "react";
 import Navbar from "@/components/ui/navbar";
 import { FriendsSidePanel } from "@/components/ui/friends-side-panel";
 import { FriendsPanelProvider } from "@/contexts/friends-panel-context";
-import { createClient } from "@/utils/supabase/server";
 import {
   getPendingFriendRequests,
   getFriendsWithStatus,
