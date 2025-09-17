@@ -7,6 +7,7 @@ import React, {
   useState,
   useTransition,
 } from "react";
+import { createClient } from "@/utils/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -61,6 +62,7 @@ import { sendFriendRequest } from "@/app/friends/actions";
 // Profile Row Component
 const ProfileRow = ({
   currentCheckIns,
+  currentUserId,
 }: {
   currentCheckIns?: Array<{
     fullname: string;
@@ -68,7 +70,9 @@ const ProfileRow = ({
     user_id: string;
     is_friend: boolean;
     has_pending_request: boolean;
+    verified?: boolean;
   }>;
+  currentUserId?: string | null;
 }) => {
   if (!currentCheckIns || currentCheckIns.length === 0) {
     return null;
@@ -103,22 +107,38 @@ const ProfileRow = ({
                   <img
                     src={user.profile_pic}
                     alt={user.fullname}
-                    className="w-7 h-7 rounded-full object-cover shadow-sm"
+                    className={`w-7 h-7 rounded-full object-cover shadow-sm ${
+                      user.user_id === currentUserId
+                        ? "border-2 border-blue-500"
+                        : user.is_friend
+                        ? "border-2 border-green-500"
+                        : ""
+                    }`}
                   />
                 ) : (
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-semibold shadow-sm">
+                  <div className={`w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-semibold shadow-sm ${
+                    user.user_id === currentUserId
+                      ? "border-2 border-blue-500"
+                      : user.is_friend
+                      ? "border-2 border-green-500"
+                      : ""
+                  }`}>
                     {initials}
                   </div>
                 )}
-                {user.is_friend && (
-                  <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border border-white" />
+                {user.verified && (
+                  <div className="absolute -top-1 -right-1">
+                    <ShieldCheck className="h-3 w-3 text-yellow-500" />
+                  </div>
                 )}
               </div>
             </TooltipTrigger>
             <TooltipContent>
               <p>
                 {user.fullname}
+                {user.user_id === currentUserId ? " (You)" : ""}
                 {user.is_friend ? " (Friend)" : ""}
+                {user.verified ? " (Verified)" : ""}
               </p>
             </TooltipContent>
           </Tooltip>
@@ -209,6 +229,7 @@ const PlayerListModal = ({
   onClose,
   currentCheckIns,
   parkName,
+  currentUserId,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -218,8 +239,10 @@ const PlayerListModal = ({
     user_id: string;
     is_friend: boolean;
     has_pending_request: boolean;
+    verified?: boolean;
   }>;
   parkName: string;
+  currentUserId?: string | null;
 }) => {
   if (!currentCheckIns || currentCheckIns.length === 0) {
     return (
@@ -247,9 +270,10 @@ const PlayerListModal = ({
     );
   }
 
-  // Sort to show friends first
-  const friends = currentCheckIns.filter((user) => user.is_friend);
-  const nonFriends = currentCheckIns.filter((user) => !user.is_friend);
+  // Filter out current user and sort to show friends first
+  const filteredCheckIns = currentCheckIns.filter((user) => user.user_id !== currentUserId);
+  const friends = filteredCheckIns.filter((user) => user.is_friend);
+  const nonFriends = filteredCheckIns.filter((user) => !user.is_friend);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -285,20 +309,29 @@ const PlayerListModal = ({
                       className="flex items-center justify-between p-2 rounded-lg border"
                     >
                       <div className="flex items-center gap-3">
-                        {user.profile_pic ? (
-                          <img
-                            src={user.profile_pic}
-                            alt={user.fullname}
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
-                            {initials}
-                          </div>
-                        )}
+                        <div className="relative">
+                          {user.profile_pic ? (
+                            <img
+                              src={user.profile_pic}
+                              alt={user.fullname}
+                              className="w-10 h-10 rounded-full object-cover border-2 border-green-500"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold border-2 border-green-500">
+                              {initials}
+                            </div>
+                          )}
+                          {user.verified && (
+                            <div className="absolute -top-1 -right-1">
+                              <ShieldCheck className="h-4 w-4 text-yellow-500" />
+                            </div>
+                          )}
+                        </div>
                         <div>
                           <p className="font-medium">{user.fullname}</p>
-                          <p className="text-xs text-green-600">Friend</p>
+                          <p className="text-xs text-green-600">
+                            Friend{user.verified ? " • Verified" : ""}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -334,18 +367,30 @@ const PlayerListModal = ({
                       className="flex items-center justify-between p-2 rounded-lg border"
                     >
                       <div className="flex items-center gap-3">
-                        {user.profile_pic ? (
-                          <img
-                            src={user.profile_pic}
-                            alt={user.fullname}
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
-                            {initials}
-                          </div>
-                        )}
-                        <p className="font-medium">{user.fullname}</p>
+                        <div className="relative">
+                          {user.profile_pic ? (
+                            <img
+                              src={user.profile_pic}
+                              alt={user.fullname}
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
+                              {initials}
+                            </div>
+                          )}
+                          {user.verified && (
+                            <div className="absolute -top-1 -right-1">
+                              <ShieldCheck className="h-4 w-4 text-yellow-500" />
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium">{user.fullname}</p>
+                          {user.verified && (
+                            <p className="text-xs text-yellow-600">Verified</p>
+                          )}
+                        </div>
                       </div>
                       <AddFriendButton
                         userId={user.user_id}
@@ -381,6 +426,7 @@ interface ParkCardProps {
       user_id: string;
       is_friend: boolean;
       has_pending_request: boolean;
+      verified?: boolean;
     }>;
     tags?: {
       courts: number;
@@ -414,11 +460,30 @@ const ParkCard: FC<ParkCardProps> = ({
   const [isCheckInPending, startCheckInTransition] = useTransition();
   const [isRemovingPark, startRemovingParkTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const checkInCount = park.active_check_in_count;
   const courtCapacity = park.courts * 4;
 
-  // Mock data for testing profile row with 7 users (more than 5)
+  // Get current user ID
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+    };
+    getCurrentUser();
+  }, []);
+
+  // Mock data for testing profile row with 8 users (including current user)
   const mockCurrentCheckIns = park.current_check_ins || [
+    {
+      fullname: "Current User (You)",
+      profile_pic: null,
+      user_id: currentUserId || "current-user",
+      is_friend: false,
+      has_pending_request: false,
+      verified: true,
+    },
     {
       fullname: "John Doe",
       profile_pic:
@@ -426,6 +491,7 @@ const ParkCard: FC<ParkCardProps> = ({
       user_id: "1",
       is_friend: true,
       has_pending_request: false,
+      verified: true,
     },
     {
       fullname: "Jane Smith",
@@ -433,6 +499,7 @@ const ParkCard: FC<ParkCardProps> = ({
       user_id: "2",
       is_friend: false,
       has_pending_request: true,
+      verified: false,
     },
     {
       fullname: "Mike Johnson",
@@ -441,6 +508,7 @@ const ParkCard: FC<ParkCardProps> = ({
       user_id: "3",
       is_friend: true,
       has_pending_request: false,
+      verified: false,
     },
     {
       fullname: "Sarah Wilson",
@@ -448,6 +516,7 @@ const ParkCard: FC<ParkCardProps> = ({
       user_id: "4",
       is_friend: false,
       has_pending_request: false,
+      verified: true,
     },
     {
       fullname: "David Brown",
@@ -456,6 +525,7 @@ const ParkCard: FC<ParkCardProps> = ({
       user_id: "5",
       is_friend: false,
       has_pending_request: false,
+      verified: false,
     },
     {
       fullname: "Emma Davis",
@@ -463,6 +533,7 @@ const ParkCard: FC<ParkCardProps> = ({
       user_id: "6",
       is_friend: true,
       has_pending_request: false,
+      verified: true,
     },
     {
       fullname: "Alex Chen",
@@ -471,6 +542,7 @@ const ParkCard: FC<ParkCardProps> = ({
       user_id: "7",
       is_friend: false,
       has_pending_request: true,
+      verified: false,
     },
   ];
 
@@ -516,30 +588,50 @@ const ParkCard: FC<ParkCardProps> = ({
 
   const handleToggleCheckIn = () => {
     startCheckInTransition(async () => {
-      // 1. Define the action and corresponding messages based on the state
-      const action = isCheckedIn ? checkoutUser : checkInUser;
-      const errorMessage = isCheckedIn
-        ? "There was an error checking out. Please try again."
-        : "There was an error checking in. Please try again.";
+      debugger;
+      const parkId = park.id.toString();
 
       try {
-        // 2. Execute the chosen action
-        const result = await action(park.id);
+        // Wrap getCurrentPosition in a Promise to make it awaitable
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject);
+        });
 
-        // 3. Handle the result from the server action
+        debugger;
+        const userLongitude = position.coords.longitude;
+        const userLatitude = position.coords.latitude;
+
+        const result = isCheckedIn
+          ? await checkoutUser(parkId)
+          : await checkInUser(parkId, userLongitude, userLatitude);
+
         if (!result.success) {
-          setError(result.message || errorMessage);
+          setError(
+            result.message ||
+              "There was an error checking in/out. Please try again."
+          );
           return; // Stop if the server reported a controlled error
         }
 
-        // 4. On success, notify the parent component
         if (onCheckIn) {
           onCheckIn();
         }
-      } catch (e) {
-        // 5. Catch any unexpected errors (e.g., network failure)
-        console.error("Check-in/out failed:", e);
-        setError("An unexpected network error occurred.");
+      } catch (error: any) {
+        let errorMessage = "Unable to retrieve location.";
+        if (error.code) {
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = "Location access denied by user.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = "Location information is unavailable.";
+              break;
+            case error.TIMEOUT:
+              errorMessage = "Location request timed out.";
+              break;
+          }
+        }
+        setError(errorMessage);
       }
     });
   };
@@ -691,7 +783,7 @@ const ParkCard: FC<ParkCardProps> = ({
           </div>
 
           {/* Profile Row - Current Check-ins */}
-          <ProfileRow currentCheckIns={mockCurrentCheckIns} />
+          <ProfileRow currentCheckIns={mockCurrentCheckIns} currentUserId={currentUserId} />
 
           {/* Queue display when over capacity */}
           {checkInCount > courtCapacity && (
@@ -866,6 +958,7 @@ const ParkCard: FC<ParkCardProps> = ({
             onClose={() => setShowPlayerList(false)}
             currentCheckIns={mockCurrentCheckIns}
             parkName={park.name}
+            currentUserId={currentUserId}
           />
         </CardContent>
       </Card>

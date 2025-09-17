@@ -90,9 +90,14 @@ const main = async () => {
   const mainParkId = parkIds[0];
 
   // Add coordinates to the main park
-
+  // const { error: coordError } = await supabaseAdmin
+  //   .from("parks")
+  //   .update({
+  //     coordinates: `POINT(0 0)`,
+  //   })
+  //   .eq("id", mainParkId);
   // if (coordError) {
-  //   console.error('Error adding coordinates to main park:', coordError);
+  //   console.error("Error adding coordinates to main park:", coordError);
   // }
 
   await seed.park_users((x) =>

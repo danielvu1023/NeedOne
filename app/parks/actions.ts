@@ -73,7 +73,7 @@ export async function deleteParkForUser(parkId: number) {
   }
 }
 
-export async function checkoutUser(parkId: number): Promise<ApiResponse> {
+export async function checkoutUser(parkId: string): Promise<ApiResponse> {
   try {
     const supabase = await createClient();
     const { data, error: userError } = await supabase.auth.getUser();
@@ -112,7 +112,6 @@ export async function checkoutUser(parkId: number): Promise<ApiResponse> {
       };
     }
 
-
     revalidatePath("/");
     return { success: true, message: "Successfully checked out from park!" };
   } catch (err) {
@@ -123,7 +122,11 @@ export async function checkoutUser(parkId: number): Promise<ApiResponse> {
   }
 }
 
-export async function checkInUser(parkId: number): Promise<ApiResponse> {
+export async function checkInUser(
+  parkId: string,
+  userLongitude: number,
+  userLatitude: number
+): Promise<ApiResponse> {
   try {
     // Step 1: Authenticate the user (Identical to checkout)
     const supabase = await createClient();
@@ -140,6 +143,8 @@ export async function checkInUser(parkId: number): Promise<ApiResponse> {
     // This is the core logic. We pass the parkId to our custom function.
     const { error: rpcError } = await supabase.rpc("check_in_user", {
       park_id_to_check_in: parkId,
+      user_longitude: userLongitude,
+      user_latitude: userLatitude,
     });
 
     if (rpcError) {
