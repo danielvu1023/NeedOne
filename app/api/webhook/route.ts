@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { WebhookPayload } from "@/lib/types";
 import { createClient } from "@/utils/supabase/server";
-
+import webpush from "web-push";
+import { decrypt } from "@/lib/encryption";
+webpush.setVapidDetails(
+  `mailto:${process.env.EMAIL}`,
+  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+  process.env.VAPID_PRIVATE_KEY!
+);
 export async function POST(request: NextRequest) {
   console.log("Webhook endpoint hit - POST request received");
   try {
@@ -17,7 +23,7 @@ export async function POST(request: NextRequest) {
       console.log(`Processing check-in for user: ${userId}`);
 
       // Create Supabase client
-      const supabase = createClient();
+      const supabase = await createClient();
 
       // Call RPC function to get friends' active push subscriptions
       const { data: pushSubscriptions, error } = await supabase.rpc(
@@ -38,13 +44,22 @@ export async function POST(request: NextRequest) {
         // TODO: Send push notifications to these subscriptions
         // This is where you would integrate with your push notification service
         for (const subscription of pushSubscriptions || []) {
-          console.log(`Would send push to user ${subscription.user_id}:`, {
+          const pushSubscription = {
             endpoint: subscription.endpoint,
             keys: {
               p256dh: subscription.p256dh_key,
-              auth: subscription.auth_key,
+              auth: decrypt(subscription.auth_key),
             },
-          });
+          };
+          await webpush.sendNotification(
+            pushSubscription,
+            JSON.stringify({
+              title: "Test Notification",
+              body: "Yo it worked",
+              icon: "/my-favicon/web-app-manifest-192x192.png",
+              url: process.env.NGROK_URL!,
+            })
+          );
         }
       }
     }
