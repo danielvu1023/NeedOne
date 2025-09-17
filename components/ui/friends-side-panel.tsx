@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -21,7 +21,12 @@ import {
 import { cn, formatTimeAgo } from "@/lib/utils";
 import { useFriendsPanel } from "@/contexts/friends-panel-context";
 import { signOut } from "@/app/login/actions";
-import { getFriendsWithStatus } from "@/app/friends/actions";
+import {
+  acceptFriendRequest,
+  declineFriendRequest,
+  getFriendsWithStatus,
+  removeFriend,
+} from "@/app/friends/actions";
 import { createClient } from "@/utils/supabase/client";
 
 export function FriendsSidePanel({
@@ -37,7 +42,19 @@ export function FriendsSidePanel({
   const [pendingRequests, setPendingRequests] = useState(
     initialPendingRequests
   );
+
   const [friends, setFriends] = useState(friendsWithStatus);
+  const [pendingActions, setPendingActions] = useState<{
+    accepting: Set<string>;
+    declining: Set<string>;
+    removing: Set<string>;
+  }>({
+    accepting: new Set(),
+    declining: new Set(),
+    removing: new Set(),
+  });
+  const [, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
   console.log("pendingRequests", pendingRequests);
   const setupRealtimeSubscription = async () => {
@@ -101,7 +118,7 @@ export function FriendsSidePanel({
     userFriendsChannel
       .on("broadcast", { event: "INSERT" }, async (payload) => {
         console.log(
-          `[${new Date().toISOString()}] Realtime user friends event for user ${userId}:`,
+          `[${new Date().toISOString()}] Realtime user friends INSERT event for user ${userId}:`,
           payload
         );
 
@@ -211,24 +228,109 @@ export function FriendsSidePanel({
   const onlineFriends = friends.filter((friend) => friend.is_checked_in);
   const offlineFriends = friends.filter((friend) => !friend.is_checked_in);
 
-  const getParkName = (parkId: string) => {
-    const park = parks.find((p) => p.id === parkId);
-    return park?.name || "Unknown Park";
+  const handleDeclineFriendRequest = (senderId: string) => {
+    setPendingActions(prev => ({
+      ...prev,
+      declining: new Set([...prev.declining, senderId])
+    }));
+
+    startTransition(async () => {
+      const errorMessage =
+        "There was an error declining the friend request. Please try again.";
+
+      try {
+        const result = await declineFriendRequest(senderId);
+
+        if (!result.success) {
+          setError(result.message || errorMessage);
+          return;
+        }
+
+        setPendingRequests((prev) =>
+          prev.filter((request) => request.sender_id !== senderId)
+        );
+
+        setError(null);
+      } catch (e) {
+        console.error("Decline friend request failed:", e);
+        setError("An unexpected network error occurred.");
+      } finally {
+        setPendingActions(prev => ({
+          ...prev,
+          declining: new Set([...prev.declining].filter(id => id !== senderId))
+        }));
+      }
+    });
   };
 
-  const acceptFriendRequest = (id: number) => {
-    console.log("Accept friend request:", id);
-    // TODO: Implement actual friend request acceptance
+  const handleRemoveFriend = (friendId: string) => {
+    setPendingActions(prev => ({
+      ...prev,
+      removing: new Set([...prev.removing, friendId])
+    }));
+
+    startTransition(async () => {
+      const errorMessage =
+        "There was an error removing the friend. Please try again.";
+
+      try {
+        const result = await removeFriend(friendId);
+
+        if (!result.success) {
+          setError(result.message || errorMessage);
+          return;
+        }
+
+        setFriends((prev) =>
+          prev.filter((friend) => friend.friend_id !== friendId)
+        );
+
+        setError(null);
+      } catch (e) {
+        console.error("Remove friend failed:", e);
+        setError("An unexpected network error occurred.");
+      } finally {
+        setPendingActions(prev => ({
+          ...prev,
+          removing: new Set([...prev.removing].filter(id => id !== friendId))
+        }));
+      }
+    });
   };
 
-  const declineFriendRequest = (id: number) => {
-    console.log("Decline friend request:", id);
-    // TODO: Implement actual friend request decline
-  };
+  const handleAcceptFriendRequest = (senderId: string) => {
+    setPendingActions(prev => ({
+      ...prev,
+      accepting: new Set([...prev.accepting, senderId])
+    }));
 
-  const removeFriend = (id: number) => {
-    console.log("Remove friend:", id);
-    // TODO: Implement actual friend removal
+    startTransition(async () => {
+      const errorMessage =
+        "There was an error accepting the friend request. Please try again.";
+
+      try {
+        const result = await acceptFriendRequest(senderId);
+
+        if (!result.success) {
+          setError(result.message || errorMessage);
+          return;
+        }
+
+        setPendingRequests((prev) =>
+          prev.filter((request) => request.sender_id !== senderId)
+        );
+
+        setError(null);
+      } catch (e) {
+        console.error("Accept friend request failed:", e);
+        setError("An unexpected network error occurred.");
+      } finally {
+        setPendingActions(prev => ({
+          ...prev,
+          accepting: new Set([...prev.accepting].filter(id => id !== senderId))
+        }));
+      }
+    });
   };
 
   return (
@@ -311,17 +413,31 @@ export function FriendsSidePanel({
                             size="sm"
                             variant="ghost"
                             className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
-                            onClick={() => acceptFriendRequest(request.id)}
+                            onClick={() =>
+                              handleAcceptFriendRequest(request.sender_id)
+                            }
+                            disabled={pendingActions.accepting.has(request.sender_id) || pendingActions.declining.has(request.sender_id)}
                           >
-                            <Check className="h-4 w-4" />
+                            {pendingActions.accepting.has(request.sender_id) ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+                            ) : (
+                              <Check className="h-4 w-4" />
+                            )}
                           </Button>
                           <Button
                             size="sm"
                             variant="ghost"
                             className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => declineFriendRequest(request.id)}
+                            onClick={() =>
+                              handleDeclineFriendRequest(request.sender_id)
+                            }
+                            disabled={pendingActions.accepting.has(request.sender_id) || pendingActions.declining.has(request.sender_id)}
                           >
-                            <X className="h-4 w-4" />
+                            {pendingActions.declining.has(request.sender_id) ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+                            ) : (
+                              <X className="h-4 w-4" />
+                            )}
                           </Button>
                         </div>
                       </div>
@@ -379,9 +495,14 @@ export function FriendsSidePanel({
                         size="sm"
                         variant="ghost"
                         className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => removeFriend(friend.friend_id)}
+                        onClick={() => handleRemoveFriend(friend.friend_id)}
+                        disabled={pendingActions.removing.has(friend.friend_id)}
                       >
-                        <Trash2 className="h-3 w-3" />
+                        {pendingActions.removing.has(friend.friend_id) ? (
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current" />
+                        ) : (
+                          <Trash2 className="h-3 w-3" />
+                        )}
                       </Button>
                     </div>
                   ))}
@@ -428,13 +549,25 @@ export function FriendsSidePanel({
                         size="sm"
                         variant="ghost"
                         className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => removeFriend(friend.friend_id)}
+                        onClick={() => handleRemoveFriend(friend.friend_id)}
+                        disabled={pendingActions.removing.has(friend.friend_id)}
                       >
-                        <Trash2 className="h-3 w-3" />
+                        {pendingActions.removing.has(friend.friend_id) ? (
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current" />
+                        ) : (
+                          <Trash2 className="h-3 w-3" />
+                        )}
                       </Button>
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Error Display */}
+            {error && (
+              <div className="mb-4 text-sm text-red-600 bg-red-50 p-3 rounded border border-red-200">
+                {error}
               </div>
             )}
 

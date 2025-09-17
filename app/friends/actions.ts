@@ -187,84 +187,115 @@ export async function getPendingFriendRequests() {
   }
 }
 
-export async function acceptFriendRequest(senderId: string) {
-  const supabase = await createClient();
+export async function acceptFriendRequest(
+  senderId: string
+): Promise<ApiResponse> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+    if (userError || !user) {
+      redirect("/login");
+    }
 
-  if (userError || !user) {
-    redirect("/login");
+    // Use the new secure RPC function that only needs sender_id
+    const { error } = await supabase.rpc("accept_friend_request", {
+      request_sender_id: senderId,
+    });
+
+    if (error) {
+      console.error("Error accepting friend request:", error);
+      return {
+        success: false,
+        message: error.message || "Failed to accept friend request.",
+      };
+    }
+
+    revalidatePath("/");
+    return { success: true, message: "Friend request accepted!" };
+  } catch (error) {
+    console.error("Unexpected error in acceptFriendRequest:", error);
+    return {
+      success: false,
+      message: "An unexpected error occurred. Please try again.",
+    };
   }
-  // Enforce consistent ordering for the friendships table
-  const [user_id_1, user_id_2] = [user.id, senderId].sort();
-
-  // Use an RPC function (database transaction) to ensure atomicity
-  const { error } = await supabase.rpc("accept_friend_request", {
-    request_sender_id: senderId,
-    request_receiver_id: user.id,
-    friend_user_1: user_id_1,
-    friend_user_2: user_id_2,
-  });
-
-  if (error) {
-    return { success: false, message: "Failed to accept friend request." };
-  }
-
-  revalidatePath("/friends");
-  return { success: true, message: "Friend request accepted." };
 }
 
-export async function declineFriendRequest(senderId: string) {
-  const supabase = await createClient();
+export async function declineFriendRequest(
+  senderId: string
+): Promise<ApiResponse> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+    if (userError || !user) {
+      redirect("/login");
+    }
 
-  if (userError || !user) {
-    redirect("/login");
+    // Use the new secure RPC function that only needs sender_id
+    const { error } = await supabase.rpc("decline_friend_request", {
+      request_sender_id: senderId,
+    });
+
+    if (error) {
+      console.error("Error declining friend request:", error);
+      return {
+        success: false,
+        message: error.message || "Failed to decline friend request.",
+      };
+    }
+
+    revalidatePath("/");
+    return { success: true, message: "Friend request declined." };
+  } catch (error) {
+    console.error("Unexpected error in declineFriendRequest:", error);
+    return {
+      success: false,
+      message: "An unexpected error occurred. Please try again.",
+    };
   }
-
-  const { error } = await supabase
-    .from("friend_requests")
-    .delete()
-    .or(
-      `(sender_id.eq.${senderId},receiver_id.eq.${user.id}),(sender_id.eq.${user.id},receiver_id.eq.${senderId})`
-    );
-
-  if (error) {
-    return { success: false, message: "Could not decline friend request." };
-  }
-
-  revalidatePath("/friends");
-  return { success: true, message: "Friend request declined." };
 }
 
-// export async function removeFriend(friendId) {
-//   const user = await getAuthenticatedUser();
-//   const supabase = createClient();
+export async function removeFriend(friendId: string): Promise<ApiResponse> {
+  debugger;
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
 
-//   const [user_id_1, user_id_2] = [user.id, friendId].sort();
+    if (userError || !user) {
+      redirect("/login");
+    }
 
-//   const { error } = await supabase
-//     .from('friendships')
-//     .delete()
-//     .match({ user_id_1, user_id_2 });
+    // Use the new secure RPC function that only needs friend_user_id
+    const { error } = await supabase.rpc("remove_friend", {
+      friend_user_id: friendId,
+    });
 
-//   if (error) {
-//     return { error: 'Could not remove friend.' };
-//   }
+    if (error) {
+      console.error("Error removing friend:", error);
+      return {
+        success: false,
+        message: error.message || "Failed to remove friend.",
+      };
+    }
 
-//   // Also remove any historical friend requests between them
-//   await supabase
-//     .from('friend_requests')
-//     .delete()
-//     .or(`(sender_id.eq.${user.id},receiver_id.eq.${friendId}),(sender_id.eq.${friendId},receiver_id.eq.${user.id})`);
-
-//   revalidatePath('/friends');
-//   return { success: 'Friend removed.' };
-// }
+    revalidatePath("/");
+    return { success: true, message: "Friend removed successfully." };
+  } catch (error) {
+    console.error("Unexpected error in removeFriend:", error);
+    return {
+      success: false,
+      message: "An unexpected error occurred. Please try again.",
+    };
+  }
+}
