@@ -264,7 +264,6 @@ export async function declineFriendRequest(
 }
 
 export async function removeFriend(friendId: string): Promise<ApiResponse> {
-  debugger;
   try {
     const supabase = await createClient();
     const {

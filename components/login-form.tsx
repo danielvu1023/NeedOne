@@ -38,7 +38,7 @@ export function LoginForm({
         await login(formData);
       }
     } catch (error) {
-      console.error('Auth error:', error);
+      console.error("Auth error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -90,14 +90,18 @@ export function LoginForm({
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-md p-3 flex items-center space-x-2">
                   <AlertCircle className="h-4 w-4 text-red-500" />
-                  <span className="text-sm text-red-700">{getErrorMessage(error)}</span>
+                  <span className="text-sm text-red-700">
+                    {getErrorMessage(error)}
+                  </span>
                 </div>
               )}
-              
+
               {message && (
                 <div className="bg-green-50 border border-green-200 rounded-md p-3 flex items-center space-x-2">
                   <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="text-sm text-green-700">{getSuccessMessage(message)}</span>
+                  <span className="text-sm text-green-700">
+                    {getSuccessMessage(message)}
+                  </span>
                 </div>
               )}
 
@@ -117,7 +121,7 @@ export function LoginForm({
                     />
                   </div>
                 )}
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-sm font-medium">
                     Email
@@ -131,7 +135,7 @@ export function LoginForm({
                     className="w-full"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-sm font-medium">
                     Password
@@ -161,11 +165,7 @@ export function LoginForm({
                   </div>
                 </div>
 
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={isLoading}
-                >
+                <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
                 </Button>
               </form>
@@ -175,11 +175,15 @@ export function LoginForm({
                   <Separator className="w-full" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-gray-500">Or continue with</span>
+                  <span className="bg-white px-2 text-gray-500">
+                    Or continue with
+                  </span>
                 </div>
               </div>
 
-              <GoogleSignInButton />
+              <div className="flex justify-center ">
+                <GoogleSignInButton />
+              </div>
 
               <div className="text-center">
                 <Button
@@ -187,15 +191,15 @@ export function LoginForm({
                   onClick={() => setIsSignUp(!isSignUp)}
                   className="text-sm text-gray-600 hover:text-gray-900"
                 >
-                  {isSignUp 
-                    ? "Already have an account? Sign in" 
-                    : "Don't have an account? Sign up"
-                  }
+                  {isSignUp
+                    ? "Already have an account? Sign in"
+                    : "Don't have an account? Sign up"}
                 </Button>
               </div>
 
               <div className="text-center text-xs text-gray-400 mt-6">
-                By continuing, you agree to our terms of service and privacy policy
+                By continuing, you agree to our terms of service and privacy
+                policy
               </div>
             </div>
           </CardContent>

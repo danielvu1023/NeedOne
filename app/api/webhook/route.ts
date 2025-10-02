@@ -54,8 +54,8 @@ export async function POST(request: NextRequest) {
           await webpush.sendNotification(
             pushSubscription,
             JSON.stringify({
-              title: "Test Notification",
-              body: "Yo it worked",
+              title: "John Doe just checked into Elody Trantow Park!",
+
               icon: "/my-favicon/web-app-manifest-192x192.png",
               url: process.env.NGROK_URL!,
             })

@@ -116,13 +116,15 @@ const ProfileRow = ({
                     }`}
                   />
                 ) : (
-                  <div className={`w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-semibold shadow-sm ${
-                    user.user_id === currentUserId
-                      ? "border-2 border-blue-500"
-                      : user.is_friend
-                      ? "border-2 border-green-500"
-                      : ""
-                  }`}>
+                  <div
+                    className={`w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-semibold shadow-sm ${
+                      user.user_id === currentUserId
+                        ? "border-2 border-blue-500"
+                        : user.is_friend
+                        ? "border-2 border-green-500"
+                        : ""
+                    }`}
+                  >
                     {initials}
                   </div>
                 )}
@@ -271,7 +273,9 @@ const PlayerListModal = ({
   }
 
   // Filter out current user and sort to show friends first
-  const filteredCheckIns = currentCheckIns.filter((user) => user.user_id !== currentUserId);
+  const filteredCheckIns = currentCheckIns.filter(
+    (user) => user.user_id !== currentUserId
+  );
   const friends = filteredCheckIns.filter((user) => user.is_friend);
   const nonFriends = filteredCheckIns.filter((user) => !user.is_friend);
 
@@ -455,6 +459,8 @@ const ParkCard: FC<ParkCardProps> = ({
   const [isRemoving, setIsRemoving] = useState(false);
   const [showModeratorInput, setShowModeratorInput] = useState(false);
   const [showPlayerList, setShowPlayerList] = useState(false);
+  const [checkInTimeDisplay, setCheckInTimeDisplay] = useState<string>("");
+  const [reportTimeDisplay, setReportTimeDisplay] = useState<string>("");
 
   const moderatorCount = park.latest_report_count || 0;
   const [isCheckInPending, startCheckInTransition] = useTransition();
@@ -468,11 +474,27 @@ const ParkCard: FC<ParkCardProps> = ({
   useEffect(() => {
     const getCurrentUser = async () => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       setCurrentUserId(user?.id || null);
     };
     getCurrentUser();
   }, []);
+
+  // Update time displays on client
+  useEffect(() => {
+    setCheckInTimeDisplay(formatTimeAgo(park.latest_check_in_time));
+    setReportTimeDisplay(formatTimeAgo(park.latest_report_created_at));
+
+    // Update every 10 seconds
+    const interval = setInterval(() => {
+      setCheckInTimeDisplay(formatTimeAgo(park.latest_check_in_time));
+      setReportTimeDisplay(formatTimeAgo(park.latest_report_created_at));
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [park.latest_check_in_time, park.latest_report_created_at]);
 
   // Mock data for testing profile row with 8 users (including current user)
   const mockCurrentCheckIns = park.current_check_ins || [
@@ -588,16 +610,16 @@ const ParkCard: FC<ParkCardProps> = ({
 
   const handleToggleCheckIn = () => {
     startCheckInTransition(async () => {
-      debugger;
       const parkId = park.id.toString();
 
       try {
         // Wrap getCurrentPosition in a Promise to make it awaitable
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject);
-        });
+        const position = await new Promise<GeolocationPosition>(
+          (resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject);
+          }
+        );
 
-        debugger;
         const userLongitude = position.coords.longitude;
         const userLatitude = position.coords.latitude;
 
@@ -777,13 +799,16 @@ const ParkCard: FC<ParkCardProps> = ({
             <div className="flex items-center text-muted-foreground font-inter">
               <Clock className="h-4 w-4 mr-1" />
               <span className="time-display text-xs">
-                {formatTimeAgo(park.latest_check_in_time)}
+                {checkInTimeDisplay || "..."}
               </span>
             </div>
           </div>
 
           {/* Profile Row - Current Check-ins */}
-          <ProfileRow currentCheckIns={mockCurrentCheckIns} currentUserId={currentUserId} />
+          <ProfileRow
+            currentCheckIns={mockCurrentCheckIns}
+            currentUserId={currentUserId}
+          />
 
           {/* Queue display when over capacity */}
           {checkInCount > courtCapacity && (
@@ -860,7 +885,7 @@ const ParkCard: FC<ParkCardProps> = ({
             <div className="flex items-center text-muted-foreground font-inter">
               <Clock className="h-4 w-4 mr-1" />
               <span className="time-display text-xs">
-                {formatTimeAgo(park.latest_report_created_at)}
+                {reportTimeDisplay || "..."}
               </span>
             </div>
           </div>
@@ -919,10 +944,7 @@ const ParkCard: FC<ParkCardProps> = ({
                   className="flex-1"
                   name="moderatorCount"
                 />
-                <Button
-                  type="submit"
-                  disabled={submitReportPending || !moderatorCount}
-                >
+                <Button type="submit" disabled={submitReportPending}>
                   {submitReportPending ? "Updating..." : "Update"}
                 </Button>
               </form>

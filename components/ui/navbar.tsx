@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { createClient } from "@/utils/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -33,6 +34,29 @@ export default function Navbar() {
   const [feedbackText, setFeedbackText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toggleExpanded } = useFriendsPanel();
+  const [userProfile, setUserProfile] = useState<{
+    name: string | null;
+    image_url: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('name, image_url')
+          .eq('id', user.id)
+          .single();
+
+        setUserProfile(profile);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
 
   const handleSubmitFeedback = () => {
     setIsSubmitting(true);
@@ -183,8 +207,18 @@ export default function Navbar() {
               onClick={toggleExpanded}
             >
               <Avatar className="h-9 w-9">
-                <AvatarImage src="https://lh3.googleusercontent.com/a/ACg8ocKLlooCBCB36dJ3-DqsVFm5sA962GL51QMGu2nRnIVZhw" alt="Daniel Vu" />
-                <AvatarFallback>DV</AvatarFallback>
+                {userProfile?.image_url ? (
+                  <AvatarImage src={userProfile.image_url} alt={userProfile.name || "User"} />
+                ) : null}
+                <AvatarFallback>
+                  {userProfile?.name
+                    ? userProfile.name
+                        .split(" ")
+                        .map((n) => n.charAt(0).toUpperCase())
+                        .join("")
+                        .slice(0, 2)
+                    : "U"}
+                </AvatarFallback>
               </Avatar>
             </Button>
           </div>

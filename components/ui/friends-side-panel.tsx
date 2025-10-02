@@ -460,7 +460,7 @@ export function FriendsSidePanel({
                 <div className="space-y-2">
                   {onlineFriends.map((friend) => (
                     <div
-                      key={friend.id}
+                      key={friend.friend_id}
                       className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 group"
                     >
                       <div className="relative">
@@ -522,7 +522,7 @@ export function FriendsSidePanel({
                 <div className="space-y-2">
                   {offlineFriends.map((friend) => (
                     <div
-                      key={friend.id}
+                      key={friend.friend_id}
                       className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 group"
                     >
                       <div className="relative">
