@@ -56,67 +56,59 @@ NeedOne solves a common problem for pickleball enthusiasts: knowing which courts
 
 Watch the full demo of NeedOne in action:
 
-[![NeedOne Demo](https://img.youtube.com/vi/hVhwoUfbuDY/maxresdefault.jpg)](https://youtu.be/hVhwoUfbuDY)
+[![Watch NeedOne Demo](https://img.youtube.com/vi/hVhwoUfbuDY/maxresdefault.jpg)](https://youtu.be/hVhwoUfbuDY)
 
-[Click here to watch on YouTube](https://youtu.be/hVhwoUfbuDY)
+**[▶️ Click here to watch the demo on YouTube](https://youtu.be/hVhwoUfbuDY)**
 
 ## Screenshots
 
 ### My Parks Dashboard - User Checked In
 
-<img src="https://github.com/user-attachments/assets/your-image-id-2" alt="My Parks Dashboard - Checked In" width="300"/>
+<img src="https://github.com/user-attachments/assets/ac0c0e41-603e-474b-8ce1-c71e1160a179" alt="My Parks Dashboard - Checked In" width="300"/>
 
 The main dashboard showing park activity when a user is checked in. As a **Progressive Web App (PWA)**, NeedOne can be installed directly to your home screen for an app-like experience with full notification support.
 
 ### My Parks Dashboard - User Checked Out
 
-<img src="https://github.com/user-attachments/assets/your-image-id-3" alt="My Parks Dashboard - Checked Out" width="300"/>
+<img src="https://github.com/user-attachments/assets/b12c1916-d924-49c8-8495-244ff250e7d2" alt="My Parks Dashboard - Checked Out" width="300"/>
 
 Dashboard view when the user is not currently checked in to any park. The PWA architecture allows instant access without app store downloads.
 
 ### Moderator Capacity Update
 
-<img src="https://github.com/user-attachments/assets/your-image-id-1" alt="Moderator Update Feature" width="300"/>
+<img src="https://github.com/user-attachments/assets/2edbdc51-1fca-422c-ba59-a466e791e423" alt="Moderator Update Feature" width="300"/>
 
 Verified moderators can update the reported capacity at parks to ensure accurate player counts. The moderator badge (shield icon) identifies trusted community members.
 
 ### People at the Park
 
-<img src="https://github.com/user-attachments/assets/your-image-id-4" alt="People at Park View" width="300"/>
+<img src="https://github.com/user-attachments/assets/43a41a95-f402-4dd6-8971-c29ca44b20b0" alt="People at Park View" width="300"/>
 
 View who's currently at the park, with friends highlighted separately from other players. Send friend requests directly from this view to grow your pickleball network.
 
 ### Add Parks to Your List
 
-<img src="https://github.com/user-attachments/assets/your-image-id-5" alt="Add Parks Feature" width="300"/>
+<img src="https://github.com/user-attachments/assets/2edbdc51-1fca-422c-ba59-a466e791e423" alt="Add Parks Feature" width="300"/>
 
 Browse and add existing parks to your personal list. Each park displays detailed information including number of courts, net type, environment (indoor/outdoor), and privacy status.
 
 ### Create New Park (Moderator Feature)
 
-<img src="https://github.com/user-attachments/assets/your-image-id-6" alt="Create Park Form" width="300"/>
+<img src="https://github.com/user-attachments/assets/e8dbaf62-3ea2-4fbc-afd5-6e9088a30972" alt="Create Park Form" width="300"/>
 
 Moderators can add new pickleball locations to the system with comprehensive details including park name, location, description, court count, max players, and facility tags.
 
 ### Friends & Friend Requests
 
-<img src="https://github.com/user-attachments/assets/your-image-id-9" alt="Friends Panel" width="300"/>
+<img src="https://github.com/user-attachments/assets/79276ff6-00a5-4647-a16d-5cb50dc25bf6" alt="Friends Panel" width="300"/>
 
 Manage your friend network with real-time online status. See which friends are currently at parks, accept or decline friend requests, and receive push notifications when friends check in.
 
-### Feedback System
+### Share Feedback
 
-<img src="https://github.com/user-attachments/assets/your-image-id-7" alt="Feedback Form" width="300"/>
+<img src="https://github.com/user-attachments/assets/b42a2e8b-5f7c-44c5-a22b-dfcab0b30100" alt="Feedback Form" width="300"/>
 
 Built-in feedback system allows users to rate their experience and submit bug reports, feature requests, or general feedback to help improve the app.
-
----
-
-**Note:** To display screenshots in your GitHub README, you'll need to:
-
-1. Upload the screenshots by dragging them into a GitHub issue or pull request comment
-2. Copy the generated URL (format: `https://github.com/user-attachments/assets/...`)
-3. Replace the placeholder URLs above with your actual image URLs
 
 ## Getting Started
 
@@ -132,13 +124,7 @@ Built-in feedback system allows users to rate their experience and submit bug re
 
 ### Available Commands
 
-- `npm run dev` - Start development server with Turbopack
-- `npm run build` - Build production bundle
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-- `npx prisma db seed` - Seed database
-- `npx prisma generate` - Generate Prisma client
-- `npx prisma db push` - Push schema changes to database
+/// Documentation will be added soon.
 
 ## Why Progressive Web App (PWA)?
 
